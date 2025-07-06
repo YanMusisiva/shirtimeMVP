@@ -55,7 +55,7 @@ export default function ClickClientModal({ nameProduct, onClose }: ClickClientMo
           ×
         </button>
         <h2 className="text-2xl font-semibold text-gray-900 mb-6 text-center tracking-tight">
-          Recevoir plus d&apos;infos sur <span className="font-bold text-black">"{nameProduct}"</span>
+          Recevoir plus d&apos;infos sur <span className="font-bold text-black">&quot;{nameProduct}&quot;</span>
         </h2>
         <form onSubmit={handleSubmit} className="space-y-5">
           <input
