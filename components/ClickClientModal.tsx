@@ -41,7 +41,11 @@ export default function ClickClientModal({
       setEmail("");
       setNumero("");
 
-      setMessage(data.message || "Votre demande a été envoyée.");
+      if (res.ok) {
+        setMessage("Votre demande a été envoyée.");
+      } else {
+        setMessage(data.message || "An error occurred.");
+      }
     } catch (error) {
       console.error(error);
       setMessage("Erreur lors de l'envoi.");
