@@ -1,19 +1,14 @@
 "use client";
 
 import { useState } from "react";
-import { clientSchema } from "../lib/clientSchema";
 
-interface ClickClientModalProps {
-  nameProduct: string;
+interface ClickCommentModalProps {
   onClose: () => void;
 }
 
-export default function ClickClientModal({
-  nameProduct,
-  onClose,
-}: ClickClientModalProps) {
-  const [email, setEmail] = useState("");
-  const [numero, setNumero] = useState("");
+export default function ClickCommentModal({ onClose }: ClickCommentModalProps) {
+  const [name, setName] = useState("");
+  const [comment, setComment] = useState("");
   const [loading, setLoading] = useState(false);
   const [message, setMessage] = useState("");
   const [sent, setSent] = useState(false);
@@ -23,24 +18,22 @@ export default function ClickClientModal({
     setLoading(true);
     setMessage("");
 
-    const validation = clientSchema.safeParse({ email, nameProduct, numero });
-    if (!validation.success) {
-      setMessage(validation.error.errors[0].message);
-      setLoading(false);
-      return;
-    }
-
     try {
-      const res = await fetch("/api/clickclient", {
+      const res = await fetch("/api/clickcomment", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify(validation.data),
+        body: JSON.stringify({ name, comment }),
       });
       const data = await res.json();
-      // setMessage(data.message);
-      setEmail("");
-      setNumero("");
       setSent(true);
+      setName("");
+      setComment("");
+
+      if (res.ok) {
+        setMessage("Comment submitted successfully!");
+      } else {
+        setMessage(data.message || "An error occurred.");
+      }
     } catch (error) {
       console.error(error);
       setMessage("Erreur lors de l'envoi.");
@@ -62,34 +55,32 @@ export default function ClickClientModal({
 
         {sent ? (
           <div className="text-2xl font-semibold text-gray-900 mb-6 text-center tracking-tight">
-            Thank you for your choice! We will contact you in less than 10
-            minutes
+            Thank you for your FeedBack!
           </div>
         ) : (
           <>
             <h2 className="text-2xl font-semibold text-gray-900 mb-6 text-center tracking-tight">
-              Receive more information about{" "}
-              <span className="font-bold text-black">
-                &quot;{nameProduct}&quot;
-              </span>
+              Please share your comments (FeedBack) - Thank you
             </h2>
             <form onSubmit={handleSubmit} className="space-y-5">
               <input
-                type="email"
-                placeholder="Enter your e-mail"
-                value={email}
-                onChange={(e) => setEmail(e.target.value)}
-                required
-                className="w-full px-4 py-3 rounded-xl border border-gray-300 focus:border-gray-500 focus:ring-2 focus:ring-gray-200 outline-none bg-white/70 text-gray-900 placeholder-gray-400 transition"
-              />
-              <input
                 type="text"
-                placeholder="Enter your Number (+256...)"
-                value={numero}
-                onChange={(e) => setNumero(e.target.value)}
+                placeholder="Enter your Name"
+                value={name}
+                onChange={(e) => setName(e.target.value)}
+                minLength={4}
                 required
                 className="w-full px-4 py-3 rounded-xl border border-gray-300 focus:border-gray-500 focus:ring-2 focus:ring-gray-200 outline-none bg-white/70 text-gray-900 placeholder-gray-400 transition"
               />
+              <textarea
+                placeholder="Enter your Comments..."
+                value={comment}
+                onChange={(e) => setComment(e.target.value)}
+                minLength={10}
+                maxLength={180}
+                required
+                className="w-full resize-none px-4 py-3 rounded-xl border border-gray-300 focus:border-gray-500 focus:ring-2 focus:ring-gray-200 outline-none bg-white/70 text-gray-900 placeholder-gray-400 transition"
+              ></textarea>
               <button
                 type="submit"
                 disabled={loading}
@@ -109,6 +100,6 @@ export default function ClickClientModal({
 }
 
 export const metadata = {
-  title: "Modal - Click Client",
-  description: "Modal for capturing click clients with email and number.",
+  title: "Modal - Click Comment",
+  description: "Modal for capturing comments.",
 };

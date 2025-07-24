@@ -7,21 +7,17 @@ import { getEmailContent } from "../../../lib/emailTemplate";
 import { notifyTelegram } from "../../../lib/notifyTelegram";
 import { parsePhoneNumberFromString } from "libphonenumber-js";
 
-const allowedCountries = ['BI', 'CD', 'UG'];
-
-const isValidAllowedCountryNumber = (phoneNumber: string): boolean => {
+const isValidPhoneNumber = (phoneNumber: string): boolean => {
   const parsedNumber = parsePhoneNumberFromString(phoneNumber);
-  if (!parsedNumber) return false;
-  return parsedNumber.isValid() && allowedCountries.includes(parsedNumber.country as string);
+  return !!parsedNumber && parsedNumber.isValid();
 };
 
 const clientSchema = z.object({
   email: z.string().email(),
   nameProduct: z.string().min(1),
-  numero: z.string().refine(
-    isValidAllowedCountryNumber,
-    { message: "Numéro de téléphone invalide ou pays non autorisé (BI, CD, UG)" }
-  ),
+  numero: z
+    .string()
+    .refine(isValidPhoneNumber, { message: "Numéro de téléphone invalide" }),
 });
 
 export async function POST(req: NextRequest) {
@@ -31,7 +27,10 @@ export async function POST(req: NextRequest) {
 
     const parsed = clientSchema.safeParse(body);
     if (!parsed.success) {
-      return NextResponse.json({ message: "Invalid data", errors: parsed.error.flatten() }, { status: 400 });
+      return NextResponse.json(
+        { message: "Invalid data", errors: parsed.error.flatten() },
+        { status: 400 }
+      );
     }
 
     const { email, nameProduct, numero } = parsed.data;
@@ -48,7 +47,7 @@ export async function POST(req: NextRequest) {
     *Date:* ${new Date().toLocaleString()}`);
 
     // Email selon l'élément cliqué
-   const { subject, html } = getEmailContent(nameProduct);
+    const { subject, html } = getEmailContent(nameProduct);
 
     const transporter = nodemailer.createTransport({
       service: "gmail",
@@ -65,7 +64,7 @@ export async function POST(req: NextRequest) {
       html,
     });
 
-     return NextResponse.json({ message: "client enregistré et email envoyé." });
+    return NextResponse.json({ message: "client enregistré et email envoyé." });
   } catch (error) {
     console.error(error);
     return NextResponse.json({ message: "Server error" }, { status: 500 });
