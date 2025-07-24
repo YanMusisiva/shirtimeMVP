@@ -12,7 +12,7 @@ export function getEmailContent(NameProduct: string) {
     En attendant, n'hésitez pas à consulter notre site web pour découvrir nos autres produits et services.
   </p>
   <div style="text-align: center;">
-    <a href="https:" target="_blank" style="background-color: #0070ba; color: #ffffff; text-decoration: none; padding: 12px 20px; border-radius: 4px; font-size: 16px; display: inline-block;">
+    <a href="https://shirtime-mvp.vercel.app/" target="_blank" style="background-color: #0070ba; color: #ffffff; text-decoration: none; padding: 12px 20px; border-radius: 4px; font-size: 16px; display: inline-block;">
       Shirtime Website
     </a>
   </div>

@@ -37,10 +37,9 @@ export default function ClickClientModal({
         body: JSON.stringify(validation.data),
       });
       const data = await res.json();
-
+      setSent(true);
       setEmail("");
       setNumero("");
-      setSent(true);
 
       setMessage(data.message || "Votre demande a été envoyée.");
     } catch (error) {
