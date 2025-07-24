@@ -183,10 +183,7 @@ export default function Home() {
         <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-6">
           {products.map((product: Product, idx: number) => (
             <SlideUpOnView key={idx} delay={100 * idx} className="group">
-              <div
-                key={idx}
-                className="flex flex-col items-center text-center p-4 hover:scale-105 transition border rounded-2xl"
-              >
+              <div className="flex flex-col items-center text-center p-4 hover:scale-105 transition border rounded-2xl">
                 <div
                   className="relative w-full h-60 mb-4"
                   onClick={() => handleOpenClientModal(product.name)}
