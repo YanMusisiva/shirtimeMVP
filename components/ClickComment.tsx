@@ -55,12 +55,12 @@ export default function ClickCommentModal({ onClose }: ClickCommentModalProps) {
 
         {sent ? (
           <div className="text-2xl font-semibold text-gray-900 mb-6 text-center tracking-tight">
-            Thank you for your FeedBack!
+            Thank you!
           </div>
         ) : (
           <>
             <h2 className="text-2xl font-semibold text-gray-900 mb-6 text-center tracking-tight">
-              Please share your comments (FeedBack) - Thank you
+              Your message here
             </h2>
             <form onSubmit={handleSubmit} className="space-y-5">
               <input
@@ -73,7 +73,7 @@ export default function ClickCommentModal({ onClose }: ClickCommentModalProps) {
                 className="w-full px-4 py-3 rounded-xl border border-gray-300 focus:border-gray-500 focus:ring-2 focus:ring-gray-200 outline-none bg-white/70 text-gray-900 placeholder-gray-400 transition"
               />
               <textarea
-                placeholder="Enter your Comments..."
+                placeholder="Enter your Message..."
                 value={comment}
                 onChange={(e) => setComment(e.target.value)}
                 minLength={10}

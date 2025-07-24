@@ -133,13 +133,24 @@ export default function Home() {
       <section className="flex justify-center py-4 mb-20">
         <select
           value={city}
-          onChange={(e) => setCity(e.target.value as City)} // Type assertion pour éviter l'erreur de type
-          className="border rounded-2xl px-4 py-2 text-lg text-black bg-white shadow-md focus:outline-none focus:ring-2 focus:ring-black transition"
+          onChange={(e) => setCity(e.target.value as City)}
+          className="border-2 border-black rounded-2xl px-6 py-3 text-lg text-black bg-white shadow-lg focus:outline-none focus:ring-2 focus:ring-black transition font-semibold"
         >
-          <option value="Goma">Goma</option>
-          <option value="Kampala">Kampala</option>
-          <option value="Bujumbura">Bujumbura</option>
-          <option value="Mahagi/Ituri">Mahagi/Ituri</option>
+          <option value="Goma" className="bg-white text-black font-medium">
+            🏔️ Goma
+          </option>
+          <option value="Kampala" className="bg-white text-black font-medium">
+            🏙️ Kampala
+          </option>
+          <option value="Bujumbura" className="bg-white text-black font-medium">
+            🌊 Bujumbura
+          </option>
+          <option
+            value="Mahagi/Ituri"
+            className="bg-white text-black font-medium"
+          >
+            🌳 Mahagi/Ituri
+          </option>
         </select>
       </section>
 
@@ -217,15 +228,16 @@ export default function Home() {
 
       {/* Call to Action Section */}
       <section className="bg-gray-100 py-16 px-4 text-center">
-        <h2 className="text-3xl font-medium mb-4">Share your Comments</h2>
+        <h2 className="text-3xl font-medium mb-4">We are here to serve you</h2>
         <p className="text-lg text-gray-600 mb-6">
-          Please share your comments (FeedBack) - Thank you
+          For more information about our products, please contact us by sending
+          a message here.
         </p>
         <button
           className="bg-black text-white px-6 py-3 rounded-2xl hover:bg-gray-800 transition"
           onClick={handleOpenCommentModal}
         >
-          Your Comment
+          Your Message
         </button>
         {openCommentModal && (
           <ClickCommentModal onClose={handleCloseCommentModal} />
