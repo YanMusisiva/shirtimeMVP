@@ -4,6 +4,7 @@ import { useState } from "react";
 import Image from "next/image";
 import ClickClientModal from "../components/ClickClientModal";
 import ClickCommentModal from "../components/ClickComment";
+import SlideUpOnView from "@/components/SlideUpOnView";
 
 // Exemple de données produits par ville
 type City = "Goma" | "Kampala" | "Bujumbura" | "Mahagi/Ituri";
@@ -181,30 +182,32 @@ export default function Home() {
         </h2>
         <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-6">
           {products.map((product: Product, idx: number) => (
-            <div
-              key={idx}
-              className="flex flex-col items-center text-center p-4 hover:scale-105 transition border rounded-2xl"
-            >
+            <SlideUpOnView key={idx} delay={100 * idx} className="group">
               <div
-                className="relative w-full h-60 mb-4"
-                onClick={() => handleOpenClientModal(product.name)}
+                key={idx}
+                className="flex flex-col items-center text-center p-4 hover:scale-105 transition border rounded-2xl"
               >
-                <Image
-                  src={product.img}
-                  alt={product.name}
-                  fill
-                  className="object-cover rounded-2xl"
-                />
+                <div
+                  className="relative w-full h-60 mb-4"
+                  onClick={() => handleOpenClientModal(product.name)}
+                >
+                  <Image
+                    src={product.img}
+                    alt={product.name}
+                    fill
+                    className="object-cover rounded-2xl"
+                  />
+                </div>
+                <h3 className="text-xl font-medium mb-2">{product.name}</h3>
+                <p className="text-gray-600 mb-4">{product.desc}</p>
+                <button
+                  className="bg-black text-white px-4 py-2 rounded-2xl hover:bg-gray-800 transition"
+                  onClick={() => handleOpenClientModal(product.name)}
+                >
+                  Buy
+                </button>
               </div>
-              <h3 className="text-xl font-medium mb-2">{product.name}</h3>
-              <p className="text-gray-600 mb-4">{product.desc}</p>
-              <button
-                className="bg-black text-white px-4 py-2 rounded-2xl hover:bg-gray-800 transition"
-                onClick={() => handleOpenClientModal(product.name)}
-              >
-                Buy
-              </button>
-            </div>
+            </SlideUpOnView>
           ))}
           {openClientModal && (
             <ClickClientModal
