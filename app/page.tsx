@@ -236,8 +236,8 @@ export default function Home() {
       <section className="bg-gray-100 py-16 px-4 text-center">
         <h2 className="text-3xl font-medium mb-4">We are here to serve you</h2>
         <p className="text-lg text-gray-600 mb-6">
-          For more information about our products, please contact us by sending
-          a message here.
+          For more information about our products or just have a message to tell
+          us , please contact us by sending your message here.
         </p>
         <button
           className="bg-black text-white px-6 py-3 rounded-2xl hover:bg-gray-800 transition"
