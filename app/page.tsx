@@ -5,6 +5,7 @@ import Image from "next/image";
 import ClickClientModal from "../components/ClickClientModal";
 import ClickCommentModal from "../components/ClickComment";
 import SlideUpOnView from "@/components/SlideUpOnView";
+import { Listbox } from "@headlessui/react";
 
 // Exemple de données produits par ville
 type City = "Goma" | "Kampala" | "Bujumbura" | "Mahagi/Ituri";
@@ -65,6 +66,13 @@ const productsByCity: Record<City, Product[]> = {
     { name: "Product Mahagi 6", desc: "T-shirt", img: "/mahagi6.jpg" },
   ],
 };
+
+const cities = [
+  { value: "Goma", label: "🏔️ Goma" },
+  { value: "Kampala", label: "🏙️ Kampala" },
+  { value: "Bujumbura", label: "🌊 Bujumbura" },
+  { value: "Mahagi/Ituri", label: "🌳 Mahagi/Ituri" },
+];
 
 export default function Home() {
   const [city, setCity] = useState<City>("Goma");
@@ -131,27 +139,25 @@ export default function Home() {
       </h3>
       {/* City Selector */}
       <section className="flex justify-center py-4 mb-20">
-        <select
-          value={city}
-          onChange={(e) => setCity(e.target.value as City)}
-          className="border-2 border-black rounded-2xl px-6 py-3 text-lg text-black bg-white shadow-lg focus:outline-none focus:ring-2 focus:ring-black transition font-semibold"
-        >
-          <option value="Goma" className="bg-white text-black font-medium">
-            🏔️ Goma
-          </option>
-          <option value="Kampala" className="bg-white text-black font-medium">
-            🏙️ Kampala
-          </option>
-          <option value="Bujumbura" className="bg-white text-black font-medium">
-            🌊 Bujumbura
-          </option>
-          <option
-            value="Mahagi/Ituri"
-            className="bg-white text-black font-medium"
-          >
-            🌳 Mahagi/Ituri
-          </option>
-        </select>
+        <Listbox value={city} onChange={setCity}>
+          <Listbox.Button className="border-2 border-black rounded-2xl px-6 py-3 text-lg text-black bg-white shadow-lg focus:outline-none focus:ring-2 focus:ring-black transition font-semibold w-64 text-left">
+            {cities.find((c) => c.value === city)?.label}
+          </Listbox.Button>
+          <Listbox.Options className="mt-2 rounded-2xl shadow-lg bg-white border-2 border-black absolute z-10 w-64">
+            {cities
+              .filter((c) => c.value !== city) // Ne montre pas la ville sélectionnée dans la liste
+              .map((c) => (
+                <Listbox.Option
+                  key={c.value}
+                  value={c.value}
+                  as="div"
+                  className="cursor-pointer px-6 py-3 text-lg text-black font-medium hover:bg-gray-100"
+                >
+                  {c.label}
+                </Listbox.Option>
+              ))}
+          </Listbox.Options>
+        </Listbox>
       </section>
 
       {/* Product Highlight Section */}
