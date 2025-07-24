@@ -1,11 +1,9 @@
-
 export function getEmailContent(NameProduct: string) {
- return {
-        subject:NameProduct,
-        html:
-          `<div style="max-width: 480px; margin: auto; background-color: #ffffff; border: 1px solid #e0e0e0; border-radius: 8px; font-family: Arial, sans-serif; color: #333333; padding: 24px;">
+  return {
+    subject: NameProduct,
+    html: `<div style="max-width: 480px; margin: auto; background-color: #ffffff; border: 1px solid #e0e0e0; border-radius: 8px; font-family: Arial, sans-serif; color: #333333; padding: 24px;">
   <div style="text-align: center; margin-bottom: 20px;">
-    <img src="https://www.paypalobjects.com/webstatic/icon/pp258.png" alt="Logo" width="64" style="margin-bottom: 12px;" />
+    <img src="https://github.com/YanMusisiva/shirtimeMVP/commit/ee64ff718a4fc166d53f1368ac8db6c236bb810a#diff-f3100c8706ee3ec644bb477fbb042c658005b02f8ebf3e87f699647d85f82ab6" alt="Logo" width="64" style="margin-bottom: 12px;" />
     <h2 style="font-size: 20px; color: #003087; margin: 0;">SHIRTIME SERVICE CLIENT</h2>
   </div>
   <p style="font-size: 16px; line-height: 1.5; margin-bottom: 24px;">
@@ -18,7 +16,6 @@ export function getEmailContent(NameProduct: string) {
       Shirtime Website
     </a>
   </div>
-</div>`
-        ,
-      };
-    }
+</div>`,
+  };
+}

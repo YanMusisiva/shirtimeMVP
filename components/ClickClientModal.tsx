@@ -36,11 +36,13 @@ export default function ClickClientModal({
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify(validation.data),
       });
+      const data = await res.json();
 
-      // setMessage(data.message);
       setEmail("");
       setNumero("");
       setSent(true);
+
+      setMessage(data.message || "Votre demande a été envoyée.");
     } catch (error) {
       console.error(error);
       setMessage("Erreur lors de l'envoi.");
