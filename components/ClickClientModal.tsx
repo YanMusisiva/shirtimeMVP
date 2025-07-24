@@ -36,7 +36,7 @@ export default function ClickClientModal({
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify(validation.data),
       });
-      const data = await res.json();
+
       // setMessage(data.message);
       setEmail("");
       setNumero("");
