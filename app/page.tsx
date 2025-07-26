@@ -1,6 +1,6 @@
 "use client";
 import React from "react";
-import { useState } from "react";
+import { useState, useRef } from "react";
 import Image from "next/image";
 import ClickClientModal from "../components/ClickClientModal";
 import ClickCommentModal from "../components/ClickComment";
@@ -79,6 +79,7 @@ export default function Home() {
   const [openClientModal, setOpenClientModal] = useState(false);
   const [openCommentModal, setOpenCommentModal] = useState(false);
   const [selectedProductName, setSelectedProductName] = useState("");
+  const buttonRef = useRef<HTMLButtonElement>(null);
 
   const handleOpenClientModal = (name: string) => {
     setSelectedProductName(name);
@@ -134,14 +135,23 @@ export default function Home() {
           className="rounded-2xl shadow-lg h-56 object-fill"
         />
       </section>
-      <h3 className="text-xl font-semibold text-center py-4 ">
+      <h3
+        className="text-xl font-semibold text-center py-4 "
+        onClick={() => buttonRef.current?.click()}
+      >
         Choose City here ▼
       </h3>
       {/* City Selector */}
       <section className="flex justify-center py-4 mb-20">
         <Listbox value={city} onChange={setCity}>
-          <Listbox.Button className="border-2 cursor-pointer border-black rounded-2xl px-6 py-3 text-lg text-black bg-white shadow-lg focus:outline-none focus:ring-2 focus:ring-black transition font-semibold w-64 text-left">
-            {cities.find((c) => c.value === city)?.label}
+          <Listbox.Button
+            ref={buttonRef}
+            className="border-2 cursor-pointer border-black rounded-2xl px-6 py-3 text-lg text-black bg-white shadow-lg focus:outline-none focus:ring-2 focus:ring-black transition font-semibold w-64 text-left"
+          >
+            <span className="flex items-center justify-between w-full">
+              {cities.find((c) => c.value === city)?.label}
+              <span className="ml-2">▼</span>
+            </span>
           </Listbox.Button>
           <Listbox.Options className="mt-2 rounded-2xl shadow-lg bg-white border-2 border-black absolute z-10 w-64">
             {cities
