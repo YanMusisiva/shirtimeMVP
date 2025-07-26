@@ -135,12 +135,12 @@ export default function Home() {
         />
       </section>
       <h3 className="text-xl font-semibold text-center py-4 ">
-        Choose your City
+        Choose City here ▼
       </h3>
       {/* City Selector */}
       <section className="flex justify-center py-4 mb-20">
         <Listbox value={city} onChange={setCity}>
-          <Listbox.Button className="border-2 border-black rounded-2xl px-6 py-3 text-lg text-black bg-white shadow-lg focus:outline-none focus:ring-2 focus:ring-black transition font-semibold w-64 text-left">
+          <Listbox.Button className="border-2 cursor-pointer border-black rounded-2xl px-6 py-3 text-lg text-black bg-white shadow-lg focus:outline-none focus:ring-2 focus:ring-black transition font-semibold w-64 text-left">
             {cities.find((c) => c.value === city)?.label}
           </Listbox.Button>
           <Listbox.Options className="mt-2 rounded-2xl shadow-lg bg-white border-2 border-black absolute z-10 w-64">
