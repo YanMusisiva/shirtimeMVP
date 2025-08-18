@@ -33,6 +33,8 @@ export default function RootLayout({
           href="/logo_favicon.ico"
           type="image/x-icon"
         />
+
+        <meta name="google-site-verification" content="cf04820998dc5d33" />
       </head>
       <body
         className={`${geistSans.variable} ${geistMono.variable} antialiased`}
