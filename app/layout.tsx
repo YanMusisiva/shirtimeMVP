@@ -15,9 +15,6 @@ const geistMono = Geist_Mono({
 export const metadata: Metadata = {
   title: "Shirtime",
   description: "Shirtime shop on time",
-  verification: {
-    google: "cf04820998dc5d33",
-  },
 };
 
 export default function RootLayout({
@@ -34,7 +31,10 @@ export default function RootLayout({
           type="image/x-icon"
         />
 
-        <meta name="google-site-verification" content="cf04820998dc5d33" />
+        <meta
+          name="google-site-verification"
+          content="yM8uv0TXDO21p5vj5KHRXwUHJWiuIN25IucmFOlwMPs"
+        />
       </head>
       <body
         className={`${geistSans.variable} ${geistMono.variable} antialiased`}
