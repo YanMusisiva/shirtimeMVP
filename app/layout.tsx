@@ -15,6 +15,9 @@ const geistMono = Geist_Mono({
 export const metadata: Metadata = {
   title: "Shirtime",
   description: "Shirtime shop on time",
+  verification: {
+    google: "cf04820998dc5d33",
+  },
 };
 
 export default function RootLayout({
@@ -25,7 +28,11 @@ export default function RootLayout({
   return (
     <html lang="en">
       <head>
-        <link rel="shortcut icon" href="/logo_favicon.ico"  type="image/x-icon" />
+        <link
+          rel="shortcut icon"
+          href="/logo_favicon.ico"
+          type="image/x-icon"
+        />
       </head>
       <body
         className={`${geistSans.variable} ${geistMono.variable} antialiased`}

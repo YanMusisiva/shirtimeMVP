@@ -1,5 +1,5 @@
 "use client";
-import React from "react";
+import React, { useEffect } from "react";
 import { useState, useRef } from "react";
 import Image from "next/image";
 import ClickClientModal from "../components/ClickClientModal";
@@ -8,7 +8,13 @@ import SlideUpOnView from "@/components/SlideUpOnView";
 import { Listbox } from "@headlessui/react";
 
 // Exemple de données produits par ville
-type City = "Goma" | "Kampala" | "Bujumbura" | "Mahagi/Ituri";
+type City =
+  | "Goma"
+  | "Kampala"
+  | "Bujumbura"
+  | "Nairobi"
+  | "Beni"
+  | "Mahagi/Ituri";
 
 type Product = { name: string; desc: string; img: string };
 
@@ -24,6 +30,30 @@ const productsByCity: Record<City, Product[]> = {
     { name: "Product Goma 4", desc: "Trainings", img: "/goma4.jpg" },
     { name: "Product Goma 5", desc: "T-shirt", img: "/goma5.jpg" },
     { name: "Product Goma 6", desc: "T-shirt", img: "/goma6.jpg" },
+  ],
+  Nairobi: [
+    { name: "Product Nairobi 1", desc: "necklace", img: "/nairobi1.jpg" },
+    {
+      name: "Product Nairobi 2",
+      desc: "handbag",
+      img: "/nairobi2.jpg",
+    },
+    { name: "Product Nairobi 3", desc: "bags", img: "/nairobi3.jpg" },
+    { name: "Product Nairobi 4", desc: "handbag", img: "/nairobi4.jpg" },
+    { name: "Product Nairobi 5", desc: "necklace", img: "/nairobi5.jpg" },
+    { name: "Product Nairobi 6", desc: "necklace", img: "/nairobi6.jpg" },
+  ],
+  Beni: [
+    { name: "Product Beni 1", desc: "T-shirt", img: "/beni1.jpg" },
+    {
+      name: "Product Beni 2",
+      desc: "Tshirts",
+      img: "/beni2.jpg",
+    },
+    { name: "Product Beni 3", desc: "polo", img: "/beni3.jpg" },
+    { name: "Product Beni 4", desc: "T-shirt", img: "/beni4.jpg" },
+    { name: "Product Beni 5", desc: "T-shirt", img: "/beni5.jpg" },
+    { name: "Product Beni 6", desc: "Training", img: "/beni6.jpg" },
   ],
   Kampala: [
     { name: "Product Kampala 1", desc: "Trainings", img: "/kampala1.jpg" },
@@ -68,10 +98,12 @@ const productsByCity: Record<City, Product[]> = {
 };
 
 const cities = [
-  { value: "Goma", label: "🏔️ Goma" },
-  { value: "Kampala", label: "🏙️ Kampala" },
-  { value: "Bujumbura", label: "🌊 Bujumbura" },
-  { value: "Mahagi/Ituri", label: "🌳 Mahagi/Ituri" },
+  { value: "Goma", label: "🌋 Goma" }, // volcan Nyiragongo
+  { value: "Kampala", label: "🌆 Kampala" }, // grande ville en pleine expansion
+  { value: "Nairobi", label: "🦁 Nairobi" }, // safari / capitale
+  { value: "Bujumbura", label: "🏖️ Bujumbura" }, // plages du lac Tanganyika
+  { value: "Beni", label: "🏙️ Beni" }, // ville plus petite
+  { value: "Mahagi/Ituri", label: "🌳 Mahagi/Ituri" }, // forêt tropicale
 ];
 
 export default function Home() {
@@ -80,6 +112,7 @@ export default function Home() {
   const [openCommentModal, setOpenCommentModal] = useState(false);
   const [selectedProductName, setSelectedProductName] = useState("");
   const buttonRef = useRef<HTMLButtonElement>(null);
+  const exploreRef = useRef<HTMLDivElement>(null);
 
   const handleOpenClientModal = (name: string) => {
     setSelectedProductName(name);
@@ -96,6 +129,20 @@ export default function Home() {
     setOpenCommentModal(false);
   };
   const products = productsByCity[city as City]; // Type assertion pour éviter l'erreur de type
+
+  const images = ["/john.jpg", "/jesper.jpg", "/dorcas.jpg", "/justine.jpg"];
+
+  const [index, setIndex] = useState(0);
+  const [isPaused, setIsPaused] = useState(false);
+
+  useEffect(() => {
+    if (!isPaused) {
+      const interval = setInterval(() => {
+        setIndex((prevIndex) => (prevIndex + 1) % images.length);
+      }, 3000);
+      return () => clearInterval(interval);
+    }
+  }, [isPaused, images.length]);
 
   return (
     <main className="bg-white text-black min-h-screen">
@@ -128,18 +175,19 @@ export default function Home() {
       {/* Company Image Section */}
       <section className="flex  justify-center py-4">
         <Image
-          src="/entreprise.jpg" // Mets l'image dans /public/entreprise.jpg
-          alt="Image de l'entreprise"
-          width={400}
-          height={200}
-          className="rounded-2xl shadow-lg h-56 object-fill"
+          src={images[index]} // Mets l'image dans /public/entreprise.jpg
+          alt="Seller's image"
+          width={300}
+          height={450}
+          className="rounded-2xl shadow-lg object-cover transition-all duration-500 cursor-pointer"
+          onMouseDown={() => setIsPaused(true)}
+          onMouseUp={() => setIsPaused(false)}
+          onTouchStart={() => setIsPaused(true)}
+          onTouchEnd={() => setIsPaused(false)}
         />
       </section>
-      <h3
-        className="text-xl font-semibold text-center py-4 "
-        onClick={() => buttonRef.current?.click()}
-      >
-        Choose City here ▼
+      <h3 className="text-xl font-semibold text-center py-4 ">
+        See products from ▼
       </h3>
       {/* City Selector */}
       <section className="flex justify-center py-4 mb-20">
@@ -171,7 +219,10 @@ export default function Home() {
       </section>
 
       {/* Product Highlight Section */}
-      <section className="flex flex-col md:flex-row items-center justify-center gap-12 py-16 px-4 max-w-6xl mx-auto">
+      <section
+        ref={exploreRef}
+        className="flex flex-col md:flex-row items-center justify-center gap-12 py-16 px-4 max-w-6xl mx-auto"
+      >
         <div
           className="w-full md:w-1/2"
           onClick={() => handleOpenClientModal(products[0].name)}
@@ -241,6 +292,28 @@ export default function Home() {
           )}
         </div>
       </section>
+      {/* Bouton pour changer la ville */}
+      <div className="flex justify-center py-8">
+        <button
+          className="bg-black text-white px-6 py-3 rounded-2xl hover:bg-gray-800 transition font-semibold shadow-lg hover:shadow-blue-400/60 focus:ring-4 focus:ring-blue-300 outline-none border-2 border-transparent hover:border-blue-500 flex items-center gap-2"
+          onClick={() => {
+            const currentIdx = cities.findIndex((c) => c.value === city);
+            const nextIdx = (currentIdx + 1) % cities.length;
+            setCity(cities[nextIdx].value as City);
+            setTimeout(() => {
+              exploreRef.current?.scrollIntoView({ behavior: "smooth" });
+            }, 100);
+          }}
+        >
+          <span>🛒 ➕</span>
+          {
+            cities[
+              (cities.findIndex((c) => c.value === city) + 1) % cities.length
+            ].label
+          }
+          <span>➡️</span>
+        </button>
+      </div>
 
       {/* Call to Action Section */}
       <section className="bg-gray-100 py-16 px-4 text-center">
