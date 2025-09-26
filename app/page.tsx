@@ -130,7 +130,7 @@ export default function Home() {
   };
   const products = productsByCity[city as City]; // Type assertion pour éviter l'erreur de type
 
-  const images = ["/john.jpg", "/jesper.jpg", "/dorcas.jpg", "/justine.jpg"];
+  const images = [ "/jesper.jpg", "/dorcas.jpg", "/justine.jpg"];
 
   const [index, setIndex] = useState(0);
   const [isPaused, setIsPaused] = useState(false);
