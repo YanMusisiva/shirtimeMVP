@@ -80,11 +80,11 @@ export default function AdminLoginPage() {
         </button>
 
         <div className="relative flex py-2 items-center mb-4">
-          <div className="flex-grow border-t border-neutral-800"></div>
-          <span className="flex-shrink mx-4 text-neutral-500 text-[10px] uppercase tracking-widest">
+          <div className="grow border-t border-neutral-800"></div>
+          <span className="shrink mx-4 text-neutral-500 text-[10px] uppercase tracking-widest">
             ou par email
           </span>
-          <div className="flex-grow border-t border-neutral-800"></div>
+          <div className="grow border-t border-neutral-800"></div>
         </div>
 
         <form

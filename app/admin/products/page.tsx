@@ -4,6 +4,8 @@ import Image from "next/image";
 import { auth } from "@/lib/firebase";
 import { onAuthStateChanged, signOut } from "firebase/auth";
 import { useRouter } from "next/navigation";
+import { db } from "@/lib/firebase"; // 👈 Vérifiez bien le chemin vers votre fichier de config Firebase
+import { doc, deleteDoc } from "firebase/firestore"; // 👈 Ces fonctions doivent être importées séparément
 
 type Product = {
   id: string;
@@ -91,17 +93,63 @@ export default function ManageProductsPage() {
   };
 
   // DELETE : Supprimer la fiche de Firestore
-  const handleDelete = async (id: string) => {
-    if (!confirm("Supprimer définitivement ce produit de la boutique ?"))
+  // Remplacer l'ancienne fonction par celle-ci :
+  const handleDeleteProduct = async (product: {
+    id: string;
+    img: string;
+    video: string;
+  }) => {
+    if (!confirm("Voulez-vous vraiment supprimer ce produit et ses médias ?"))
       return;
+
     try {
-      const res = await fetch(`/api/products?id=${id}`, { method: "DELETE" });
-      if (res.ok) {
-        setMessage("🗑️ Produit retiré avec succès.");
-        fetchProducts();
+      // 1. EXTRAIRE LES PUBLIC IDs DE CLOUDINARY
+      const getPublicId = (url: string) => {
+        const parts = url.split("/upload/");
+        if (parts.length < 2) return null;
+        // Enlève la version (v1234567) si présente et l'extension (.jpg, .mp4)
+        const pathWithExtension = parts[1].replace(/^v\d+\//, "");
+        return pathWithExtension.substring(
+          0,
+          pathWithExtension.lastIndexOf("."),
+        );
+      };
+
+      const imagePublicId = getPublicId(product.img);
+      const videoPublicId = getPublicId(product.video);
+
+      // 2. SUPPRIMER SUR CLOUDINARY VIA L'API DE ROUTE
+      if (imagePublicId) {
+        await fetch("/api/delete-media", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({
+            publicId: imagePublicId,
+            resourceType: "image",
+          }),
+        });
       }
-    } catch {
-      setMessage("❌ Erreur de suppression");
+
+      if (videoPublicId) {
+        await fetch("/api/delete-media", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({
+            publicId: videoPublicId,
+            resourceType: "video",
+          }),
+        });
+      }
+
+      // 3. SUPPRIMER SUR FIRESTORE (Ancienne logique intégrée ici)
+      await deleteDoc(doc(db, "products", product.id));
+
+      alert("🎉 Produit et médias associés supprimés définitivement !");
+
+      // Si vous avez une fonction pour rafraîchir l'affichage, appelez-la ici (ex: fetchProducts())
+    } catch (error: unknown) {
+      console.error("Erreur lors de la suppression complète :", error);
+      alert("❌ Une erreur est survenue lors de la suppression.");
     }
   };
 
@@ -168,7 +216,7 @@ export default function ManageProductsPage() {
                 className="bg-[#111112] border border-neutral-800 p-6 flex flex-col md:flex-row gap-6 relative items-start"
               >
                 {/* Miniature Cloudinary Image */}
-                <div className="w-full md:w-32 h-40 relative bg-neutral-900 flex-shrink-0 border border-neutral-800">
+                <div className="w-full md:w-32 h-40 relative bg-neutral-900 shrink-0 border border-neutral-800">
                   <Image
                     src={product.img}
                     alt={product.nameFR}
@@ -262,7 +310,7 @@ export default function ManageProductsPage() {
                         ✏️ Modifier textes
                       </button>
                       <button
-                        onClick={() => handleDelete(product.id)}
+                        onClick={() => handleDeleteProduct(product)}
                         className="border border-red-900/60 text-red-400 text-[10px] uppercase tracking-widest px-3 py-1.5 hover:bg-red-950/40 transition"
                       >
                         🗑️ Supprimer

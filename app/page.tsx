@@ -169,7 +169,7 @@ export default function HomePage() {
           />
           {/* Dégradé adaptatif */}
           <div
-            className={`absolute inset-0 bg-gradient-to-t lg:bg-gradient-to-r via-transparent to-transparent ${
+            className={`absolute inset-0 bg-linear-to-t lg:bg-linear-to-r via-transparent to-transparent ${
               isLightMode ? "from-[#f5f5f7]" : "from-[#0b0b0c]"
             }`}
           />
