@@ -1,114 +1,132 @@
 "use client";
-import React, { useEffect, useState } from "react";
+import React, { useEffect, useState, useRef } from "react";
 import Image from "next/image";
 import ClickClientModal from "../components/ClickClientModal";
-import ClickCommentModal from "../components/ClickComment";
-import SlideUpOnView from "@/components/SlideUpOnView";
+
+// Structure de traduction
+const translations = {
+  fr: {
+    shopNow: "Acheter maintenant",
+    addToCart: "Ajouter au panier",
+    added: "Ajouté !",
+    contact: "Commander / Message",
+    detailsTitle: "Spécifications & Conception",
+    cart: "Panier",
+    emptyCart: "Votre panier est vide",
+    items: "article(s)",
+    serveYou: "Nous sommes à votre écoute",
+    contactDesc:
+      "Pour finaliser votre commande ou pour toute question sur ce produit, envoyez-nous un message direct.",
+    featured: "Produit Vedette",
+  },
+  en: {
+    shopNow: "Shop Now",
+    addToCart: "Add to Cart",
+    added: "Added!",
+    contact: "Order / Contact",
+    detailsTitle: "Specifications & Design",
+    cart: "Cart",
+    emptyCart: "Your cart is empty",
+    items: "item(s)",
+    serveYou: "We are here to serve you",
+    contactDesc:
+      "To finalize your order or for any inquiries about this product, send us a direct message.",
+    featured: "Featured Product",
+  },
+};
 
 type Product = {
   id: string;
-  name: string;
-  desc: string;
-  detail: string;
+  nameEN: string;
+  nameFR: string;
+  descEN: string;
+  descFR: string;
+  detailEN: string;
+  detailFR: string;
   img: string;
-  price?: string;
+  video?: string;
+  price: string;
 };
 
-// Exemplaire unique de tableau de produits (prêt pour votre future partie admin)
-const sampleProducts: Product[] = [
-  {
-    id: "1",
-    name: "Premium T-Shirt",
-    desc: "105% Coton - Coupe Moderne",
-    detail:
-      "Disponible en tailles S, M, L, XL. Lavable en machine à 30°C. Tissu respirant haut de gamme.",
-    img: "/goma1.jpg",
-    price: "25$",
-  },
-  {
-    id: "2",
-    name: "Nike Training Tracksuit",
-    desc: "Confort & Performance",
-    detail:
-      "Idéal pour le sport ou le quotidien. Technologie Dri-FIT pour évacuer la transpiration.",
-    img: "/goma2.jpg",
-    price: "80$",
-  },
-  {
-    id: "3",
-    name: "Classic Polo",
-    desc: "Style Élégant & Casual",
-    detail:
-      "Col boutonné ajusté, logo brodé sur la poitrine. Parfait pour les sorties décontractées.",
-    img: "/goma3.jpg",
-    price: "35$",
-  },
-  {
-    id: "4",
-    name: "Urban Hoodie",
-    desc: "Collection Streetwear",
-    detail:
-      "Poche kangourou, capuche doublée avec cordon de serrage. Intérieur polaire doux.",
-    img: "/goma4.jpg",
-    price: "45$",
-  },
-  {
-    id: "5",
-    name: "Running Sneakers",
-    desc: "Semelle amortissante",
-    detail:
-      "Conception ultra-légère. Adhérence maximale sur toutes surfaces pour vos sessions de running.",
-    img: "/goma5.jpg",
-    price: "95$",
-  },
-  {
-    id: "6",
-    name: "Minimalist Cap",
-    desc: "Accessoire ajustable",
-    detail:
-      "100% coton lavé. Boucle métallique à l'arrière pour un ajustement parfait.",
-    img: "/goma6.jpg",
-    price: "15$",
-  },
-];
+// Un seul produit d'exemple (Prêt pour votre future intégration Admin)
+const currentProduct: Product = {
+  id: "shirtime-01",
+  nameEN: "AeroTech Performance Hoodie",
+  nameFR: "Sweat à Capuche Performance AeroTech",
+  descEN: "Engineered for movement. 100% premium breathable cotton structure.",
+  descFR: "Conçu pour le mouvement. Structure 100% coton respirant premium.",
+  detailEN:
+    "Features reinforced stitching, utility front pockets, and an ergonomic hood. Includes high-stretch fibers that mold perfectly to your body shape.",
+  detailFR:
+    "Doté de coutures renforcées, de poches avant utilitaires et d'une capuche ergonomique. Fibres ultra-extensibles qui s'adaptent parfaitement à votre morphologie.",
+  img: "/goma2.jpg",
+  video: "/product-detail.mp4", // Optionnel : Ajoutez votre fichier vidéo dans /public/
+  price: "65$",
+};
 
 export default function Home() {
+  const [lang, setLang] = useState<"fr" | "en">("en");
+  const [cart, setCart] = useState<{ id: string; quantity: number }[]>([]);
+  const [isAdded, setIsAdded] = useState(false);
   const [openClientModal, setOpenClientModal] = useState(false);
   const [openCommentModal, setOpenCommentModal] = useState(false);
-  const [selectedProductName, setSelectedProductName] = useState("");
 
-  // Images pour le diaporama de la section Contact
-  const contactImages = ["/jesper.jpg", "/dorcas.jpg", "/justine.jpg"];
-  const [slideIndex, setSlideIndex] = useState(0);
+  const t = translations[lang];
 
-  const handleOpenClientModal = (name: string) => {
-    setSelectedProductName(name);
-    setOpenClientModal(true);
-  };
-
-  const handleCloseClientModal = () => {
-    setOpenClientModal(false);
-    setSelectedProductName("");
-  };
-
-  // Effet pour le diaporama automatique de la section contact
+  // 1. Détection de la langue du système au chargement
   useEffect(() => {
-    const interval = setInterval(() => {
-      setSlideIndex((prev) => (prev + 1) % contactImages.length);
-    }, 3000);
-    return () => clearInterval(interval);
-  }, [contactImages.length]);
+    const systemLang = navigator.language || (navigator as any).userLanguage;
+    if (systemLang && systemLang.startsWith("fr")) {
+      setLang("fr");
+    } else {
+      setLang("en");
+    }
+
+    // 2. Récupération du panier depuis le localStorage
+    const savedCart = localStorage.getItem("shirtime_cart");
+    if (savedCart) {
+      try {
+        setCart(JSON.parse(savedCart));
+      } catch (e) {
+        console.error("Erreur de lecture du panier", e);
+      }
+    }
+  }, []);
+
+  // 3. Sauvegarde automatique du panier dans le localStorage à chaque modification
+  const handleAddToCart = () => {
+    let updatedCart = [...cart];
+    const existingItem = updatedCart.find(
+      (item) => item.id === currentProduct.id,
+    );
+
+    if (existingItem) {
+      existingItem.quantity += 1;
+    } else {
+      updatedCart.push({ id: currentProduct.id, quantity: 1 });
+    }
+
+    setCart(updatedCart);
+    localStorage.setItem("shirtime_cart", JSON.stringify(updatedCart));
+
+    // Animation rapide du bouton
+    setIsAdded(true);
+    setTimeout(() => setIsAdded(false), 2000);
+  };
+
+  // Calcul du nombre total d'articles dans le panier
+  const totalItems = cart.reduce((acc, item) => acc + item.quantity, 0);
 
   return (
     <main className="bg-white text-neutral-950 min-h-screen font-sans antialiased selection:bg-neutral-900 selection:text-white">
-      {/* Header Minimaliste */}
+      {/* Header avec bouton de Langue et Panier */}
       <header className="sticky top-0 z-50 bg-white/90 backdrop-blur-md border-b border-neutral-100 px-4 md:px-8 py-4 flex justify-between items-center">
         <div className="flex items-center gap-2">
           <Image
             src="/logo.png"
             alt="Logo"
-            width={40}
-            height={40}
+            width={35}
+            height={35}
             className="object-contain filter grayscale"
             priority
           />
@@ -116,157 +134,163 @@ export default function Home() {
             SHIRTIME
           </span>
         </div>
-        <a
-          href="#contact"
-          className="text-xs uppercase tracking-widest font-bold border-b border-neutral-950 pb-0.5 hover:text-neutral-500 hover:border-neutral-400 transition"
-        >
-          Contact
-        </a>
+
+        <div className="flex items-center gap-6">
+          {/* Sélecteur de langue */}
+          <button
+            onClick={() => setLang(lang === "en" ? "fr" : "en")}
+            className="text-[11px] font-mono tracking-widest uppercase border border-neutral-200 px-2 py-1 rounded hover:bg-neutral-50 transition"
+          >
+            {lang === "en" ? "FR 🇫🇷" : "EN 🇬🇧"}
+          </button>
+
+          {/* Indicateur de Panier LocalStorage */}
+          <div className="text-[11px] font-mono tracking-wider text-neutral-500">
+            {t.cart}:{" "}
+            <span className="font-bold text-neutral-950 bg-neutral-100 px-1.5 py-0.5 rounded">
+              {totalItems}
+            </span>
+          </div>
+
+          <a
+            href="#contact"
+            className="text-xs uppercase tracking-widest font-bold border-b border-neutral-950 pb-0.5 hover:text-neutral-500 transition"
+          >
+            {t.contact}
+          </a>
+        </div>
       </header>
 
-      {/* Grille Principale des Produits - Immédiate sur Mobile */}
-      <section className="py-6 px-4 max-w-7xl mx-auto">
-        <div className="mb-6 block md:flex md:items-end justify-between">
-          <div>
-            <span className="text-[10px] uppercase tracking-widest text-neutral-400 font-bold block mb-1">
-              E-Shop
-            </span>
-            <h1 className="text-2xl md:text-4xl font-black uppercase tracking-tight">
-              Our Collection
-            </h1>
-          </div>
-          <span className="hidden md:inline text-xs font-mono text-neutral-400">
-            {sampleProducts.length} Items
-          </span>
-        </div>
-
-        {/* Grille optimisée : 2 colonnes d'office sur mobile pour un choix rapide de l'utilisateur */}
-        <div className="grid grid-cols-2 md:grid-cols-3 gap-x-3 gap-y-8 md:gap-x-6 md:gap-y-12">
-          {sampleProducts.map((product: Product, idx: number) => (
-            <SlideUpOnView
-              key={product.id}
-              delay={50 * idx}
-              className="group flex flex-col"
-            >
-              <div
-                className="relative w-full aspect-[3/4] bg-neutral-50 overflow-hidden cursor-pointer mb-3 rounded-none border border-neutral-100"
-                onClick={() => handleOpenClientModal(product.name)}
-              >
-                <Image
-                  src={product.img}
-                  alt={product.name}
-                  fill
-                  sizes="(max-width: 768px) 50vw, 33vw"
-                  className="object-cover transition-transform duration-500 ease-out group-hover:scale-105"
-                />
-                {product.price && (
-                  <div className="absolute bottom-2 right-2 bg-white px-2 py-0.5 text-xs font-bold shadow-sm">
-                    {product.price}
-                  </div>
-                )}
-              </div>
-              <div className="flex flex-col sm:flex-row sm:items-start justify-between gap-1">
-                <div>
-                  <h3 className="text-xs md:text-sm font-bold uppercase tracking-wide text-neutral-900 truncate">
-                    {product.name}
-                  </h3>
-                  <p className="text-[11px] text-neutral-400 font-light truncate">
-                    {product.desc}
-                  </p>
-                </div>
-                <button
-                  className="w-full sm:w-auto text-[10px] md:text-xs uppercase tracking-widest font-bold bg-neutral-950 text-white sm:bg-transparent sm:text-neutral-950 border border-neutral-900 sm:border-neutral-200 px-2.5 py-1.5 sm:py-1 hover:bg-neutral-950 hover:text-white transition text-center mt-1 sm:mt-0"
-                  onClick={() => handleOpenClientModal(product.name)}
-                >
-                  Buy
-                </button>
-              </div>
-            </SlideUpOnView>
-          ))}
-        </div>
-      </section>
-
-      {/* Section Détails des Produits (Si on descend plus bas) */}
-      <section className="py-16 px-4 max-w-5xl mx-auto border-t border-neutral-200/60 mt-12">
-        <span className="text-[10px] uppercase tracking-[0.2em] text-neutral-400 font-bold block text-center mb-2">
-          Zoom sur la qualité
+      {/* SECTION PRINCIPALE : L'unique produit vedette (Style Basketball/Immersif) */}
+      <section className="min-h-[calc(100vh-70px)] flex flex-col justify-center items-center px-4 max-w-4xl mx-auto py-12">
+        <span className="text-[10px] uppercase tracking-[0.3em] text-neutral-400 font-bold mb-2">
+          {t.featured}
         </span>
-        <h2 className="text-xl md:text-2xl font-black text-center uppercase tracking-wider mb-10">
-          Product Specifications &amp; Details
-        </h2>
+        <h1 className="text-3xl md:text-6xl font-black uppercase tracking-tight text-center mb-6 leading-none">
+          {lang === "en" ? currentProduct.nameEN : currentProduct.nameFR}
+        </h1>
 
-        <div className="space-y-8">
-          {sampleProducts.map((product) => (
-            <div
-              key={`detail-${product.id}`}
-              className="grid grid-cols-1 md:grid-cols-3 gap-4 py-6 border-b border-neutral-100 items-baseline"
-            >
-              <h4 className="text-xs uppercase tracking-widest font-bold text-neutral-900">
-                {product.name}
-              </h4>
-              <p className="text-xs text-neutral-400 uppercase tracking-wide italic">
-                {product.desc}
-              </p>
-              <p className="text-xs text-neutral-600 font-light leading-relaxed">
-                {product.detail}
-              </p>
-            </div>
-          ))}
+        {/* Grande Image Centrale du Produit Unique */}
+        <div className="relative w-full aspect-[4/5] md:aspect-[16/10] bg-neutral-50 border border-neutral-100 overflow-hidden mb-8 group">
+          <Image
+            src={currentProduct.img}
+            alt={currentProduct.nameEN}
+            fill
+            sizes="(max-width: 1024px) 100vw, 1200px"
+            className="object-cover transition-transform duration-1000 ease-out group-hover:scale-105"
+            priority
+          />
+          <div className="absolute top-4 right-4 bg-neutral-950 text-white font-mono text-sm px-3 py-1 font-bold">
+            {currentProduct.price}
+          </div>
+        </div>
+
+        {/* Bouton d'action direct avec sauvegarde locale */}
+        <div className="flex flex-col items-center gap-3 w-full max-w-md">
+          <p className="text-center text-sm text-neutral-500 font-light max-w-sm mb-2">
+            {lang === "en" ? currentProduct.descEN : currentProduct.descFR}
+          </p>
+          <button
+            onClick={handleAddToCart}
+            className={`w-full text-xs uppercase tracking-widest font-bold py-4 transition-all duration-300 ${
+              isAdded
+                ? "bg-emerald-600 text-white"
+                : "bg-neutral-950 text-white hover:bg-neutral-800"
+            }`}
+          >
+            {isAdded ? `✓ ${t.added}` : t.addToCart}
+          </button>
         </div>
       </section>
 
-      {/* Section Contact combinée avec le Diaporama Produit/Style */}
+      {/* SECTION DETAILS & SPECS : Défilement avec support Vidéo/Mouvement */}
+      <section className="bg-neutral-50 py-20 px-4 border-t border-neutral-200/60">
+        <div className="max-w-5xl mx-auto grid grid-cols-1 md:grid-cols-2 gap-12 items-center">
+          {/* Zone Média dynamique : Vidéo ou Image avec effet au scroll */}
+          <div className="relative w-full aspect-[4/5] bg-neutral-900 overflow-hidden border border-neutral-200 shadow-sm">
+            {currentProduct.video ? (
+              <video
+                src={currentProduct.video}
+                autoPlay
+                loop
+                muted
+                playsInline
+                className="w-full h-full object-cover"
+              />
+            ) : (
+              <Image
+                src={currentProduct.img}
+                alt="Product Close-up"
+                fill
+                sizes="(max-width: 768px) 100vw, 50vw"
+                className="object-cover opacity-90 hover:scale-105 transition-transform duration-700"
+              />
+            )}
+            <div className="absolute bottom-4 left-4 bg-black/60 backdrop-blur-sm text-[9px] text-white tracking-widest uppercase px-2 py-0.5">
+              {currentProduct.video ? "Live Details Video" : "Macro View"}
+            </div>
+          </div>
+
+          {/* Textes explicatifs détaillés */}
+          <div className="flex flex-col justify-center">
+            <span className="text-[10px] uppercase tracking-[0.2em] text-neutral-400 font-bold mb-2">
+              Shirtime Lab
+            </span>
+            <h2 className="text-2xl font-black uppercase tracking-tight mb-4">
+              {t.detailsTitle}
+            </h2>
+            <p className="text-neutral-600 font-light text-sm leading-relaxed border-l-2 border-neutral-900 pl-4 py-1">
+              {lang === "en"
+                ? currentProduct.detailEN
+                : currentProduct.detailFR}
+            </p>
+          </div>
+        </div>
+      </section>
+
+      {/* SECTION FINALISATION / CONTACT / COMMENTAIRES */}
       <section
         id="contact"
-        className="bg-neutral-950 text-white py-16 px-4 border-t border-neutral-800"
+        className="bg-neutral-950 text-white py-20 px-4 text-center"
       >
-        <div className="max-w-5xl mx-auto grid grid-cols-1 md:grid-cols-2 gap-12 items-center">
-          {/* Diaporama intégré */}
-          <div className="relative w-full aspect-[4/5] bg-neutral-900 overflow-hidden group">
-            <Image
-              src={contactImages[slideIndex]}
-              alt="Lookbook Showcase"
-              fill
-              sizes="(max-width: 768px) 100vw, 50vw"
-              className="object-cover transition-opacity duration-700 ease-in-out"
-            />
-            <div className="absolute bottom-4 left-4 bg-black/70 backdrop-blur-sm px-3 py-1 text-[9px] uppercase tracking-widest">
-              Live Lookbook • {slideIndex + 1} / {contactImages.length}
-            </div>
-          </div>
+        <div className="max-w-xl mx-auto flex flex-col items-center">
+          <span className="text-[10px] uppercase tracking-[0.4em] text-neutral-500 mb-4 block font-bold">
+            Checkout &amp; Support
+          </span>
+          <h2 className="text-2xl md:text-3xl font-bold tracking-tight uppercase mb-4">
+            {t.serveYou}
+          </h2>
+          <p className="text-neutral-400 font-light text-xs md:text-sm leading-relaxed mb-6">
+            {t.contactDesc}
+          </p>
 
-          {/* Formulaire / Call To Action */}
-          <div className="flex flex-col justify-center">
-            <span className="text-[10px] uppercase tracking-[0.3em] text-neutral-500 mb-2 block font-bold">
-              Assistance &amp; Orders
-            </span>
-            <h2 className="text-2xl md:text-3xl font-black uppercase tracking-tight mb-4">
-              We are here to serve you
-            </h2>
-            <p className="text-neutral-400 font-light text-xs md:text-sm leading-relaxed mb-8">
-              For custom inquiries, sizing guides, or direct support about any
-              item in our catalog, please reach out directly by sending a
-              message.
-            </p>
-            <button
-              className="w-full md:w-max bg-white text-neutral-950 text-xs uppercase tracking-widest px-8 py-4 font-bold hover:bg-neutral-200 transition"
-              onClick={() => setOpenCommentModal(true)}
-            >
-              Your Message
-            </button>
-          </div>
+          {/* Résumé rapide du panier juste avant de contacter */}
+          {totalItems > 0 && (
+            <div className="mb-6 text-xs font-mono bg-neutral-900 border border-neutral-800 rounded px-4 py-2">
+              🛒 {totalItems} {t.items}{" "}
+              {lang === "en"
+                ? "ready in browser"
+                : "prêt(s) dans le navigateur"}
+            </div>
+          )}
+
+          <button
+            className="bg-white text-neutral-950 text-xs uppercase tracking-widest px-8 py-4 font-bold hover:bg-neutral-200 transition w-full sm:w-auto"
+            onClick={() => setOpenCommentModal(true)}
+          >
+            {t.contact}
+          </button>
         </div>
       </section>
 
-      {/* Modals */}
+      {/* Gestion des fenêtres modales */}
       {openClientModal && (
         <ClickClientModal
-          nameProduct={selectedProductName}
-          onClose={handleCloseClientModal}
+          nameProduct={
+            lang === "en" ? currentProduct.nameEN : currentProduct.nameFR
+          }
+          onClose={() => setOpenClientModal(false)}
         />
-      )}
-      {openCommentModal && (
-        <ClickCommentModal onClose={() => setOpenCommentModal(false)} />
       )}
     </main>
   );
