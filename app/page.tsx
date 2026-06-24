@@ -1,42 +1,37 @@
 "use client";
-import React, { useEffect, useState, useRef } from "react";
+import React, { useEffect, useState } from "react";
 import Image from "next/image";
 import ClickClientModal from "../components/ClickClientModal";
+import ClickCommentModal from "../components/ClickComment";
 
-// Structure de traduction
 const translations = {
   fr: {
-    shopNow: "Acheter maintenant",
-    addToCart: "Ajouter au panier",
+    addToCart: "Ajouter au Panier",
     added: "Ajouté !",
-    contact: "Commander / Message",
-    detailsTitle: "Spécifications & Conception",
-    cart: "Panier",
-    emptyCart: "Votre panier est vide",
-    items: "article(s)",
-    serveYou: "Nous sommes à votre écoute",
-    contactDesc:
-      "Pour finaliser votre commande ou pour toute question sur ce produit, envoyez-nous un message direct.",
-    featured: "Produit Vedette",
+    contact: "Passer Commande",
+    detailsTitle: "Spécifications du Produit",
+    cartTitle: "Votre Panier",
+    emptyCart: "Le panier est vide.",
+    checkout: "Confirmer la sélection",
+    featured: "Collection exclusive",
+    specs: "Caractéristiques",
   },
   en: {
-    shopNow: "Shop Now",
     addToCart: "Add to Cart",
     added: "Added!",
-    contact: "Order / Contact",
-    detailsTitle: "Specifications & Design",
-    cart: "Cart",
-    emptyCart: "Your cart is empty",
-    items: "item(s)",
-    serveYou: "We are here to serve you",
-    contactDesc:
-      "To finalize your order or for any inquiries about this product, send us a direct message.",
-    featured: "Featured Product",
+    contact: "Order Now",
+    detailsTitle: "Product Specifications",
+    cartTitle: "Your Cart",
+    emptyCart: "Your cart is empty.",
+    checkout: "Confirm Selection",
+    featured: "Exclusive Collection",
+    specs: "Specifications",
   },
 };
 
 type Product = {
   id: string;
+  tag: string;
   nameEN: string;
   nameFR: string;
   descEN: string;
@@ -48,169 +43,248 @@ type Product = {
   price: string;
 };
 
-// Un seul produit d'exemple (Prêt pour votre future intégration Admin)
-const currentProduct: Product = {
-  id: "shirtime-01",
-  nameEN: "AeroTech Performance Hoodie",
-  nameFR: "Sweat à Capuche Performance AeroTech",
-  descEN: "Engineered for movement. 100% premium breathable cotton structure.",
-  descFR: "Conçu pour le mouvement. Structure 100% coton respirant premium.",
-  detailEN:
-    "Features reinforced stitching, utility front pockets, and an ergonomic hood. Includes high-stretch fibers that mold perfectly to your body shape.",
-  detailFR:
-    "Doté de coutures renforcées, de poches avant utilitaires et d'une capuche ergonomique. Fibres ultra-extensibles qui s'adaptent parfaitement à votre morphologie.",
-  img: "/goma2.jpg",
-  video: "/product-detail.mp4", // Optionnel : Ajoutez votre fichier vidéo dans /public/
-  price: "65$",
-};
+// Tableau d'exemples de produits que l'utilisateur fait défiler avec les flèches
+const targetProducts: Product[] = [
+  {
+    id: "shirtime-01",
+    tag: "NIKE",
+    nameEN: "Air Tracksuit Tech",
+    nameFR: "Survêtement Air Tech",
+    descEN: "Engineered for superior comfort and warm retention.",
+    descFR:
+      "Conçu pour un confort supérieur et une rétention thermique optimale.",
+    detailEN:
+      "Ergonomic hood design with high-stretch tailored fibers. Premium reflective branding elements.",
+    detailFR:
+      "Design de capuche ergonomique avec fibres ajustées ultra-extensibles. Éléments réfléchissants premium.",
+    img: "/goma2.jpg",
+    video: "/product-detail-1.mp4",
+    price: "85$",
+  },
+  {
+    id: "shirtime-02",
+    tag: "URBAN",
+    nameEN: "AeroTech Street Hoodie",
+    nameFR: "Sweat Urban AeroTech",
+    descEN: "Heavyweight premium cotton blend built for the modern look.",
+    descFR:
+      "Mélange de coton lourd premium conçu pour un look moderne et streetwear.",
+    detailEN:
+      "Reinforced structural stitching with double-lined insulation pocket. Oversized loose-fit architecture.",
+    detailFR:
+      "Coutures structurelles renforcées avec poche d'isolation doublée. Architecture coupe ample surdimensionnée.",
+    img: "/goma4.jpg",
+    video: "/product-detail-2.mp4",
+    price: "65$",
+  },
+  {
+    id: "shirtime-03",
+    tag: "SPORTS",
+    nameEN: "Classic Flex Polo",
+    nameFR: "Polo Classic Flex",
+    descEN: "Breathable airflow knit designed for everyday versatility.",
+    descFR:
+      "Tricot respirant à flux d'air conçu pour une polyvalence quotidienne.",
+    detailEN:
+      "Moisture-wicking microfibers keep your skin dry. Tailored flat-knit collar with premium buttons.",
+    detailFR:
+      "Microfibres évacuant l'humidité pour garder la peau au sec. Col en tricot plat ajusté avec boutons premium.",
+    img: "/goma3.jpg",
+    price: "40$",
+  },
+];
 
 export default function Home() {
   const [lang, setLang] = useState<"fr" | "en">("en");
-  const [cart, setCart] = useState<{ id: string; quantity: number }[]>([]);
+  const [currentIndex, setCurrentIndex] = useState(0);
+  const [cart, setCart] = useState<
+    { id: string; name: string; price: string; quantity: number }[]
+  >([]);
+  const [isCartOpen, setIsCartOpen] = useState(false);
   const [isAdded, setIsAdded] = useState(false);
-  const [openClientModal, setOpenClientModal] = useState(false);
   const [openCommentModal, setOpenCommentModal] = useState(false);
 
   const t = translations[lang];
+  const activeProduct = targetProducts[currentIndex];
 
-  // 1. Détection de la langue du système au chargement
   useEffect(() => {
     const systemLang = navigator.language || (navigator as any).userLanguage;
-    if (systemLang && systemLang.startsWith("fr")) {
-      setLang("fr");
-    } else {
-      setLang("en");
-    }
+    if (systemLang?.startsWith("fr")) setLang("fr");
 
-    // 2. Récupération du panier depuis le localStorage
     const savedCart = localStorage.getItem("shirtime_cart");
     if (savedCart) {
       try {
         setCart(JSON.parse(savedCart));
       } catch (e) {
-        console.error("Erreur de lecture du panier", e);
+        console.error(e);
       }
     }
   }, []);
 
-  // 3. Sauvegarde automatique du panier dans le localStorage à chaque modification
   const handleAddToCart = () => {
     let updatedCart = [...cart];
-    const existingItem = updatedCart.find(
-      (item) => item.id === currentProduct.id,
-    );
+    const productName =
+      lang === "en" ? activeProduct.nameEN : activeProduct.nameFR;
+    const existing = updatedCart.find((item) => item.id === activeProduct.id);
 
-    if (existingItem) {
-      existingItem.quantity += 1;
+    if (existing) {
+      existing.quantity += 1;
     } else {
-      updatedCart.push({ id: currentProduct.id, quantity: 1 });
+      updatedCart.push({
+        id: activeProduct.id,
+        name: productName,
+        price: activeProduct.price,
+        quantity: 1,
+      });
     }
 
     setCart(updatedCart);
     localStorage.setItem("shirtime_cart", JSON.stringify(updatedCart));
 
-    // Animation rapide du bouton
     setIsAdded(true);
-    setTimeout(() => setIsAdded(false), 2000);
+    setTimeout(() => setIsAdded(false), 1500);
   };
 
-  // Calcul du nombre total d'articles dans le panier
+  const handleNext = () => {
+    setCurrentIndex((prev) => (prev + 1) % targetProducts.length);
+  };
+
+  const handlePrev = () => {
+    setCurrentIndex(
+      (prev) => (prev - 1 + targetProducts.length) % targetProducts.length,
+    );
+  };
+
+  const removeItem = (id: string) => {
+    const updated = cart.filter((item) => item.id !== id);
+    setCart(updated);
+    localStorage.setItem("shirtime_cart", JSON.stringify(updated));
+  };
+
   const totalItems = cart.reduce((acc, item) => acc + item.quantity, 0);
 
   return (
-    <main className="bg-white text-neutral-950 min-h-screen font-sans antialiased selection:bg-neutral-900 selection:text-white">
-      {/* Header avec bouton de Langue et Panier */}
-      <header className="sticky top-0 z-50 bg-white/90 backdrop-blur-md border-b border-neutral-100 px-4 md:px-8 py-4 flex justify-between items-center">
+    <main className="bg-[#0b0c10] text-[#f5f5f7] min-h-screen font-sans antialiased selection:bg-[#ff4500] selection:text-white overflow-x-hidden">
+      {/* Header Sombre Minimaliste */}
+      <header className="sticky top-0 z-50 bg-[#0b0c10]/90 backdrop-blur-md border-b border-neutral-900 px-4 md:px-8 py-4 flex justify-between items-center">
         <div className="flex items-center gap-2">
           <Image
             src="/logo.png"
             alt="Logo"
             width={35}
             height={35}
-            className="object-contain filter grayscale"
+            className="object-contain filter invert brightness-200"
             priority
           />
-          <span className="font-black text-xs tracking-widest uppercase">
+          <span className="font-black text-xs tracking-widest text-white">
             SHIRTIME
           </span>
         </div>
 
-        <div className="flex items-center gap-6">
-          {/* Sélecteur de langue */}
+        <div className="flex items-center gap-4 md:gap-6">
           <button
             onClick={() => setLang(lang === "en" ? "fr" : "en")}
-            className="text-[11px] font-mono tracking-widest uppercase border border-neutral-200 px-2 py-1 rounded hover:bg-neutral-50 transition"
+            className="text-[10px] font-mono tracking-widest border border-neutral-800 px-2 py-1 rounded text-neutral-400 hover:text-white transition"
           >
-            {lang === "en" ? "FR 🇫🇷" : "EN 🇬🇧"}
+            {lang === "en" ? "FR" : "EN"}
           </button>
 
-          {/* Indicateur de Panier LocalStorage */}
-          <div className="text-[11px] font-mono tracking-wider text-neutral-500">
-            {t.cart}:{" "}
-            <span className="font-bold text-neutral-950 bg-neutral-100 px-1.5 py-0.5 rounded">
+          {/* Bouton Panier Interactif */}
+          <button
+            onClick={() => setIsCartOpen(true)}
+            className="relative flex items-center gap-2 text-xs uppercase tracking-widest font-bold text-neutral-300 hover:text-[#ff4500] transition"
+          >
+            <span>🛒</span>
+            <span className="absolute -top-2 -right-2 bg-[#ff4500] text-white text-[9px] w-4 h-4 rounded-full flex items-center justify-center font-mono">
               {totalItems}
             </span>
-          </div>
+          </button>
 
-          <a
-            href="#contact"
-            className="text-xs uppercase tracking-widest font-bold border-b border-neutral-950 pb-0.5 hover:text-neutral-500 transition"
+          <button
+            onClick={() => setOpenCommentModal(true)}
+            className="text-xs uppercase tracking-widest font-bold bg-[#ff4500] text-white px-3 py-1.5 hover:bg-[#e03d00] transition shadow-md shadow-[#ff4500]/20"
           >
             {t.contact}
-          </a>
+          </button>
         </div>
       </header>
 
-      {/* SECTION PRINCIPALE : L'unique produit vedette (Style Basketball/Immersif) */}
-      <section className="min-h-[calc(100vh-70px)] flex flex-col justify-center items-center px-4 max-w-4xl mx-auto py-12">
-        <span className="text-[10px] uppercase tracking-[0.3em] text-neutral-400 font-bold mb-2">
-          {t.featured}
-        </span>
-        <h1 className="text-3xl md:text-6xl font-black uppercase tracking-tight text-center mb-6 leading-none">
-          {lang === "en" ? currentProduct.nameEN : currentProduct.nameFR}
-        </h1>
-
-        {/* Grande Image Centrale du Produit Unique */}
-        <div className="relative w-full aspect-[4/5] md:aspect-[16/10] bg-neutral-50 border border-neutral-100 overflow-hidden mb-8 group">
-          <Image
-            src={currentProduct.img}
-            alt={currentProduct.nameEN}
-            fill
-            sizes="(max-width: 1024px) 100vw, 1200px"
-            className="object-cover transition-transform duration-1000 ease-out group-hover:scale-105"
-            priority
-          />
-          <div className="absolute top-4 right-4 bg-neutral-950 text-white font-mono text-sm px-3 py-1 font-bold">
-            {currentProduct.price}
-          </div>
+      {/* SECTION BANNER HERO UNIQUE AVEC DÉFILEMENT DE PRODUITS */}
+      <section className="relative min-h-[90vh] flex flex-col justify-center items-center px-4 overflow-hidden py-12">
+        {/* Texte Géant en Arrière-plan (Effet Basketball/Sport Site) */}
+        <div className="absolute inset-0 flex items-center justify-center select-none pointer-events-none z-0 overflow-hidden">
+          <h1 className="text-[14vw] font-black text-neutral-900/40 uppercase tracking-tighter leading-none animate-pulse">
+            {activeProduct.tag}
+          </h1>
         </div>
 
-        {/* Bouton d'action direct avec sauvegarde locale */}
-        <div className="flex flex-col items-center gap-3 w-full max-w-md">
-          <p className="text-center text-sm text-neutral-500 font-light max-w-sm mb-2">
-            {lang === "en" ? currentProduct.descEN : currentProduct.descFR}
-          </p>
-          <button
-            onClick={handleAddToCart}
-            className={`w-full text-xs uppercase tracking-widest font-bold py-4 transition-all duration-300 ${
-              isAdded
-                ? "bg-emerald-600 text-white"
-                : "bg-neutral-950 text-white hover:bg-neutral-800"
-            }`}
-          >
-            {isAdded ? `✓ ${t.added}` : t.addToCart}
-          </button>
+        <div className="relative z-10 w-full max-w-5xl grid grid-cols-1 md:grid-cols-12 gap-8 items-center">
+          {/* Infos Produit à Gauche */}
+          <div className="md:col-span-5 flex flex-col justify-center text-center md:text-left order-2 md:order-1">
+            <span className="text-[10px] uppercase tracking-[0.4em] text-[#ff4500] font-black mb-2 block">
+              {t.featured}
+            </span>
+            <h2 className="text-3xl md:text-5xl font-black uppercase tracking-tight mb-4 text-white transition-all duration-300">
+              {lang === "en" ? activeProduct.nameEN : activeProduct.nameFR}
+            </h2>
+            <p className="text-neutral-400 text-sm font-light leading-relaxed mb-6 max-w-sm mx-auto md:mx-0">
+              {lang === "en" ? activeProduct.descEN : activeProduct.descFR}
+            </p>
+            <div className="text-2xl font-mono font-bold text-white mb-6">
+              {activeProduct.price}
+            </div>
+
+            <button
+              onClick={handleAddToCart}
+              className={`w-full md:w-max text-xs uppercase tracking-widest font-black py-4 px-8 transition-all duration-300 shadow-lg ${
+                isAdded
+                  ? "bg-emerald-600 text-white shadow-emerald-900/20"
+                  : "bg-white text-black hover:bg-[#ff4500] hover:text-white shadow-[#ff4500]/10"
+              }`}
+            >
+              {isAdded ? `✓ ${t.added}` : t.addToCart}
+            </button>
+          </div>
+
+          {/* Cadre Image/Media avec Flèches de Navigation à Droite */}
+          <div className="md:col-span-7 relative flex justify-center items-center order-1 md:order-2">
+            <div className="relative w-full aspect-[4/5] sm:aspect-[16/13] bg-[#12131a] border border-neutral-900 overflow-hidden group shadow-2xl">
+              <Image
+                src={activeProduct.img}
+                alt={activeProduct.nameEN}
+                fill
+                className="object-cover transition-transform duration-700 group-hover:scale-105"
+                priority
+              />
+            </div>
+
+            {/* Boutons Flèches Flottants (Jeux de couleurs et contrôles) */}
+            <div className="absolute bottom-4 right-4 flex gap-2 z-20">
+              <button
+                onClick={handlePrev}
+                className="w-12 h-12 bg-[#0b0c10] border border-neutral-800 text-white flex items-center justify-center hover:bg-[#ff4500] hover:border-[#ff4500] transition-all duration-200"
+              >
+                ←
+              </button>
+              <button
+                onClick={handleNext}
+                className="w-12 h-12 bg-[#0b0c10] border border-neutral-800 text-white flex items-center justify-center hover:bg-[#ff4500] hover:border-[#ff4500] transition-all duration-200"
+              >
+                →
+              </button>
+            </div>
+          </div>
         </div>
       </section>
 
-      {/* SECTION DETAILS & SPECS : Défilement avec support Vidéo/Mouvement */}
-      <section className="bg-neutral-50 py-20 px-4 border-t border-neutral-200/60">
+      {/* SECTION DETAILS EN DESSOUS AVEC VIDÉO OU MACRO COMPORTEMENT */}
+      <section className="bg-[#12131a] py-24 px-4 border-t border-neutral-900 relative z-10">
         <div className="max-w-5xl mx-auto grid grid-cols-1 md:grid-cols-2 gap-12 items-center">
-          {/* Zone Média dynamique : Vidéo ou Image avec effet au scroll */}
-          <div className="relative w-full aspect-[4/5] bg-neutral-900 overflow-hidden border border-neutral-200 shadow-sm">
-            {currentProduct.video ? (
+          {/* Zone Média interactive : Vidéo loop animée */}
+          <div className="relative w-full aspect-[4/5] bg-black border border-neutral-800 overflow-hidden group shadow-xl">
+            {activeProduct.video ? (
               <video
-                src={currentProduct.video}
+                src={activeProduct.video}
                 autoPlay
                 loop
                 muted
@@ -218,79 +292,106 @@ export default function Home() {
                 className="w-full h-full object-cover"
               />
             ) : (
-              <Image
-                src={currentProduct.img}
-                alt="Product Close-up"
-                fill
-                sizes="(max-width: 768px) 100vw, 50vw"
-                className="object-cover opacity-90 hover:scale-105 transition-transform duration-700"
-              />
+              <div className="relative w-full h-full">
+                <Image
+                  src={activeProduct.img}
+                  alt="Product Spec"
+                  fill
+                  className="object-cover opacity-80 transform group-hover:scale-110 transition-transform duration-[2000ms]"
+                />
+                <div className="absolute inset-0 bg-gradient-to-t from-black via-transparent to-transparent" />
+              </div>
             )}
-            <div className="absolute bottom-4 left-4 bg-black/60 backdrop-blur-sm text-[9px] text-white tracking-widest uppercase px-2 py-0.5">
-              {currentProduct.video ? "Live Details Video" : "Macro View"}
+            <div className="absolute top-4 left-4 bg-[#ff4500] text-[9px] text-white tracking-widest uppercase px-2 py-0.5 font-bold">
+              {t.specs}
             </div>
           </div>
 
           {/* Textes explicatifs détaillés */}
           <div className="flex flex-col justify-center">
-            <span className="text-[10px] uppercase tracking-[0.2em] text-neutral-400 font-bold mb-2">
-              Shirtime Lab
+            <span className="text-[10px] uppercase tracking-[0.3em] text-[#ff4500] font-bold mb-2">
+              Shirtime Lab Specs
             </span>
-            <h2 className="text-2xl font-black uppercase tracking-tight mb-4">
+            <h2 className="text-2xl md:text-3xl font-black uppercase tracking-tight mb-6 text-white">
               {t.detailsTitle}
             </h2>
-            <p className="text-neutral-600 font-light text-sm leading-relaxed border-l-2 border-neutral-900 pl-4 py-1">
-              {lang === "en"
-                ? currentProduct.detailEN
-                : currentProduct.detailFR}
-            </p>
+            <div className="text-neutral-400 font-light text-sm leading-relaxed border-l-2 border-[#ff4500] pl-6 py-2 bg-[#0b0c10]/40 rounded-r pr-4">
+              {lang === "en" ? activeProduct.detailEN : activeProduct.detailFR}
+            </div>
           </div>
         </div>
       </section>
 
-      {/* SECTION FINALISATION / CONTACT / COMMENTAIRES */}
-      <section
-        id="contact"
-        className="bg-neutral-950 text-white py-20 px-4 text-center"
-      >
-        <div className="max-w-xl mx-auto flex flex-col items-center">
-          <span className="text-[10px] uppercase tracking-[0.4em] text-neutral-500 mb-4 block font-bold">
-            Checkout &amp; Support
-          </span>
-          <h2 className="text-2xl md:text-3xl font-bold tracking-tight uppercase mb-4">
-            {t.serveYou}
-          </h2>
-          <p className="text-neutral-400 font-light text-xs md:text-sm leading-relaxed mb-6">
-            {t.contactDesc}
-          </p>
+      {/* DRAWER PANIER LATÉRAL (S'ouvre sur le côté de l'écran) */}
+      {isCartOpen && (
+        <div className="fixed inset-0 z-50 flex justify-end bg-black/60 backdrop-blur-sm animate-fadeIn">
+          <div
+            className="absolute inset-0"
+            onClick={() => setIsCartOpen(false)}
+          />
+          <div className="relative w-full max-w-md bg-[#0b0c10] h-full shadow-2xl p-6 flex flex-col justify-between border-l border-neutral-900 z-10">
+            <div>
+              <div className="flex justify-between items-center pb-4 border-b border-neutral-900 mb-6">
+                <h3 className="text-md font-black uppercase tracking-widest text-white">
+                  {t.cartTitle}
+                </h3>
+                <button
+                  onClick={() => setIsCartOpen(false)}
+                  className="text-neutral-400 hover:text-white text-sm font-mono"
+                >
+                  ✕ Close
+                </button>
+              </div>
 
-          {/* Résumé rapide du panier juste avant de contacter */}
-          {totalItems > 0 && (
-            <div className="mb-6 text-xs font-mono bg-neutral-900 border border-neutral-800 rounded px-4 py-2">
-              🛒 {totalItems} {t.items}{" "}
-              {lang === "en"
-                ? "ready in browser"
-                : "prêt(s) dans le navigateur"}
+              {cart.length === 0 ? (
+                <p className="text-neutral-500 text-xs uppercase tracking-wider py-8 text-center">
+                  {t.emptyCart}
+                </p>
+              ) : (
+                <div className="space-y-4 max-h-[60vh] overflow-y-auto pr-2">
+                  {cart.map((item) => (
+                    <div
+                      key={item.id}
+                      className="flex justify-between items-center bg-[#12131a] p-3 border border-neutral-900"
+                    >
+                      <div>
+                        <h4 className="text-xs uppercase tracking-wider font-bold text-white">
+                          {item.name}
+                        </h4>
+                        <p className="text-[11px] text-neutral-400 font-mono mt-0.5">
+                          {item.price} × {item.quantity}
+                        </p>
+                      </div>
+                      <button
+                        onClick={() => removeItem(item.id)}
+                        className="text-[10px] text-red-500 hover:text-red-400 uppercase tracking-widest font-bold"
+                      >
+                        Remove
+                      </button>
+                    </div>
+                  ))}
+                </div>
+              )}
             </div>
-          )}
 
-          <button
-            className="bg-white text-neutral-950 text-xs uppercase tracking-widest px-8 py-4 font-bold hover:bg-neutral-200 transition w-full sm:w-auto"
-            onClick={() => setOpenCommentModal(true)}
-          >
-            {t.contact}
-          </button>
+            {cart.length > 0 && (
+              <button
+                onClick={() => {
+                  setIsCartOpen(false);
+                  setOpenCommentModal(true);
+                }}
+                className="w-full bg-[#ff4500] text-white text-xs uppercase tracking-widest font-black py-4 hover:bg-[#e03d00] transition"
+              >
+                {t.checkout} ({totalItems})
+              </button>
+            )}
+          </div>
         </div>
-      </section>
+      )}
 
-      {/* Gestion des fenêtres modales */}
-      {openClientModal && (
-        <ClickClientModal
-          nameProduct={
-            lang === "en" ? currentProduct.nameEN : currentProduct.nameFR
-          }
-          onClose={() => setOpenClientModal(false)}
-        />
+      {/* Footer Modals */}
+      {openCommentModal && (
+        <ClickCommentModal onClose={() => setOpenCommentModal(false)} />
       )}
     </main>
   );
