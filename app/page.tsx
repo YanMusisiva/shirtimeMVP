@@ -42,7 +42,7 @@ export default function HomePage() {
   if (loading) {
     return (
       <div className="min-h-screen bg-[#0b0b0c] text-white flex items-center justify-center font-mono text-xs uppercase tracking-widest animate-pulse">
-        Chargement de l&apos;univers Shirtime...
+        Chargement Shirtime Shop...
       </div>
     );
   }
