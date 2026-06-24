@@ -85,7 +85,7 @@ export default function ManageProductsPage() {
         setEditingId(null);
         fetchProducts();
       }
-    } catch (err) {
+    } catch {
       setMessage("❌ Erreur lors de la mise à jour");
     }
   };
@@ -100,7 +100,7 @@ export default function ManageProductsPage() {
         setMessage("🗑️ Produit retiré avec succès.");
         fetchProducts();
       }
-    } catch (err) {
+    } catch {
       setMessage("❌ Erreur de suppression");
     }
   };

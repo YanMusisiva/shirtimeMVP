@@ -24,7 +24,7 @@ export default function AdminLoginPage() {
     try {
       await signInWithEmailAndPassword(auth, email, password);
       router.push("/admin/products");
-    } catch (err: any) {
+    } catch {
       setError("❌ Accès refusé. Identifiants incorrects.");
     } finally {
       setLoading(false);
@@ -39,7 +39,7 @@ export default function AdminLoginPage() {
     try {
       await signInWithPopup(auth, provider);
       router.push("/admin/products");
-    } catch (err: any) {
+    } catch {
       setError("❌ Connexion Google annulée ou échouée.");
     } finally {
       setLoading(false);

@@ -20,9 +20,12 @@ export async function GET() {
       ...doc.data(),
     }));
     return NextResponse.json(products, { status: 200 });
-  } catch (error: any) {
+  } catch (error: unknown) {
     console.error("Erreur GET Firestore:", error);
-    return NextResponse.json({ error: error.message }, { status: 500 });
+    return NextResponse.json(
+      { error: error instanceof Error ? error.message : "Erreur inconnue" },
+      { status: 500 },
+    );
   }
 }
 
@@ -75,9 +78,12 @@ export async function POST(request: Request) {
       { message: "Produit enregistré avec succès" },
       { status: 201 },
     );
-  } catch (error: any) {
+  } catch (error: unknown) {
     console.error("Erreur POST Firestore:", error);
-    return NextResponse.json({ error: error.message }, { status: 500 });
+    return NextResponse.json(
+      { error: error instanceof Error ? error.message : "Erreur inconnue" },
+      { status: 500 },
+    );
   }
 }
 
@@ -108,9 +114,12 @@ export async function PUT(request: Request) {
       { message: "Produit mis à jour avec succès" },
       { status: 200 },
     );
-  } catch (error: any) {
+  } catch (error: unknown) {
     console.error("Erreur PUT Firestore:", error);
-    return NextResponse.json({ error: error.message }, { status: 500 });
+    return NextResponse.json(
+      { error: error instanceof Error ? error.message : "Erreur inconnue" },
+      { status: 500 },
+    );
   }
 }
 
@@ -136,8 +145,11 @@ export async function DELETE(request: Request) {
       { message: "Produit supprimé avec succès de Firestore" },
       { status: 200 },
     );
-  } catch (error: any) {
+  } catch (error: unknown) {
     console.error("Erreur DELETE Firestore:", error);
-    return NextResponse.json({ error: error.message }, { status: 500 });
+    return NextResponse.json(
+      { error: error instanceof Error ? error.message : "Erreur inconnue" },
+      { status: 500 },
+    );
   }
 }

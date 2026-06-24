@@ -113,10 +113,10 @@ export default function AddProductPage() {
       });
       setImageFile(null);
       setVideoFile(null);
-    } catch (error: any) {
+    } catch (error: unknown) {
       console.error(error);
       setMessage(
-        `❌ Échec : ${error.message || "Erreur lors de l'enregistrement"}`,
+        `❌ Échec : ${error instanceof Error ? error.message : "Erreur lors de l'enregistrement"}`,
       );
     } finally {
       setLoading(false);
@@ -148,7 +148,7 @@ export default function AddProductPage() {
             href="/admin/products"
             className="border border-neutral-700 text-neutral-400 font-bold text-xs uppercase tracking-widest px-4 py-2 hover:text-white transition"
           >
-            ← Retour à l'inventaire
+            ← Retour à l&apos;inventaire
           </a>
         </div>
 
