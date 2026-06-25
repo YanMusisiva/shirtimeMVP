@@ -22,7 +22,6 @@ type CartItem = {
 
 export default function HomePage() {
   const [products, setProducts] = useState<Product[]>([]);
-  const [loading, setLoading] = useState(true);
   const [activeIndex, setActiveIndex] = useState(0);
   const [lang, setLang] = useState<"FR" | "EN">("FR");
   const [isLightMode, setIsLightMode] = useState(false);
@@ -31,24 +30,24 @@ export default function HomePage() {
   const [cart, setCart] = useState<CartItem[]>([]);
   const [isCartOpen, setIsCartOpen] = useState(false);
 
+  // 🔍 État pour le Modal de Zoom Image
+  const [isZoomOpen, setIsZoomOpen] = useState(false);
+
   // 📱 Pour détecter le Swipe sur mobile
   const [touchStartX, setTouchStartX] = useState<number | null>(null);
 
-  // Numéro WhatsApp de destination (Ex: "243xxxxxxxxx" ou "336xxxxxxxxx" sans le +)
-  const WHATSAPP_NUMBER = "24397000000"; // Remplace par ton numéro WhatsApp réel
+  const WHATSAPP_NUMBER = "243981984788";
 
-  // Chargement initial (Produits + Panier stocké)
+  // Chargement initial (Pas de loader bloquant l'affichage)
   useEffect(() => {
     const initializeShop = async () => {
       try {
-        // 1. On charge d'abord les produits de l'API
         const res = await fetch("/api/products");
         if (res.ok) {
           const data = await res.json();
           setProducts(data);
         }
 
-        // 2. On charge le panier depuis le LocalStorage en toute sécurité
         const savedCart = localStorage.getItem("shirtime_cart");
         if (savedCart) {
           const parsedCart = JSON.parse(savedCart);
@@ -61,43 +60,45 @@ export default function HomePage() {
         }
       } catch (err) {
         console.error("Erreur lors de l'initialisation de la boutique", err);
-      } finally {
-        // 3. QUOI QU'IL ARRIVE (Succès ou Erreur), on enlève le chargement
-        setLoading(false);
       }
     };
 
     initializeShop();
-  }, []); // S'exécute une seule fois au montage du composant
+  }, []);
 
   // --- ACTIONS DU PANIER ---
   const addToCart = (product: Product) => {
     setCart((prevCart) => {
       const existing = prevCart.find((item) => item.product.id === product.id);
+      let newCart;
       if (existing) {
-        return prevCart.map((item) =>
+        newCart = prevCart.map((item) =>
           item.product.id === product.id
             ? { ...item, quantity: item.quantity + 1 }
             : item,
         );
+      } else {
+        newCart = [...prevCart, { product, quantity: 1 }];
       }
-      return [...prevCart, { product, quantity: 1 }];
+      localStorage.setItem("shirtime_cart", JSON.stringify(newCart));
+      return newCart;
     });
-    setIsCartOpen(true); // Ouvre le panier pour donner un feedback visuel immédiat (comme sur le site exemple)
+    setIsCartOpen(true);
   };
 
   const updateQuantity = (productId: string, delta: number) => {
-    setCart((prevCart) =>
-      prevCart
+    setCart((prevCart) => {
+      const newCart = prevCart
         .map((item) => {
           if (item.product.id === productId) {
-            const newQty = item.quantity + delta;
-            return { ...item, quantity: newQty };
+            return { ...item, quantity: item.quantity + delta };
           }
           return item;
         })
-        .filter((item) => item.quantity > 0),
-    );
+        .filter((item) => item.quantity > 0);
+      localStorage.setItem("shirtime_cart", JSON.stringify(newCart));
+      return newCart;
+    });
   };
 
   const getCartTotal = () => {
@@ -140,14 +141,15 @@ export default function HomePage() {
 
   // --- NAVIGATION DU CARROUSEL ---
   const handlePrev = () => {
+    if (products.length === 0) return;
     setActiveIndex((prev) => (prev === 0 ? products.length - 1 : prev - 1));
   };
 
   const handleNext = () => {
+    if (products.length === 0) return;
     setActiveIndex((prev) => (prev === products.length - 1 ? 0 : prev + 1));
   };
 
-  // --- GESTION DU SWIPE MATÉRIEL ---
   const handleTouchStart = (e: React.TouchEvent) => {
     setTouchStartX(e.touches[0].clientX);
   };
@@ -157,36 +159,12 @@ export default function HomePage() {
     const touchEndX = e.changedTouches[0].clientX;
     const diffX = touchStartX - touchEndX;
 
-    if (diffX > 50) {
-      handleNext(); // Glissement vers la gauche -> suivant
-    } else if (diffX < -50) {
-      handlePrev(); // Glissement vers la droite -> précédent
-    }
+    if (diffX > 50) handleNext();
+    else if (diffX < -50) handlePrev();
     setTouchStartX(null);
   };
 
-  if (loading) {
-    return (
-      <div className="min-h-screen bg-[#0b0b0c] text-white flex items-center justify-center font-mono text-xs uppercase tracking-widest animate-pulse">
-        Chargement Shirtime Shop...
-      </div>
-    );
-  }
-
-  if (products.length === 0) {
-    return (
-      <div className="min-h-screen bg-[#0b0b0c] text-white flex flex-col items-center justify-center text-center p-4">
-        <h1 className="text-red-600 font-black text-xl tracking-wider uppercase mb-2">
-          SHIRTIME LAB
-        </h1>
-        <p className="text-neutral-500 font-mono text-xs uppercase">
-          Le catalogue est en cours de mise à jour.
-        </p>
-      </div>
-    );
-  }
-
-  const currentProduct = products[activeIndex];
+  const currentProduct = products[activeIndex] || null;
 
   return (
     <main
@@ -194,7 +172,7 @@ export default function HomePage() {
         isLightMode ? "bg-[#f5f5f7] text-black" : "bg-[#0b0b0c] text-white"
       }`}
     >
-      {/* 🔴 OVERLAY SIDEBAR DU PANIER INTERACTIF (Style Vercel/Beryl Shop) */}
+      {/* 🔴 OVERLAY SIDEBAR DU PANIER INTERACTIF */}
       <div
         className={`fixed inset-0 bg-black/60 backdrop-blur-xs z-50 transition-opacity duration-300 ${
           isCartOpen
@@ -213,11 +191,13 @@ export default function HomePage() {
       >
         <div className="p-6 border-b border-neutral-800 flex justify-between items-center bg-black/10">
           <span className="font-black text-sm tracking-widest">
-            🛒 ({getCartItemsCount()})
+            {lang === "FR"
+              ? `🛒 PANIER (${getCartItemsCount()})`
+              : `🛒 CART (${getCartItemsCount()})`}
           </span>
           <button
             onClick={() => setIsCartOpen(false)}
-            className="hover:text-red-500 p-2 text-base transition font-bold"
+            className="hover:text-red-500 p-2 text-base transition font-bold cursor-pointer"
           >
             ✕
           </button>
@@ -228,7 +208,9 @@ export default function HomePage() {
           {cart.length === 0 ? (
             <div className="h-full flex flex-col items-center justify-center text-center text-neutral-500 space-y-2 py-20">
               <span className="text-3xl">🕳️</span>
-              <p className="uppercase tracking-wider">Votre panier est vide</p>
+              <p className="uppercase tracking-wider">
+                {lang === "FR" ? "Votre panier est vide" : "Your cart is empty"}
+              </p>
             </div>
           ) : (
             cart.map((item) => (
@@ -239,7 +221,9 @@ export default function HomePage() {
                 <div className="relative w-16 h-16 bg-neutral-900 overflow-hidden shrink-0 border border-neutral-800">
                   <Image
                     src={item.product.img}
-                    alt={item.product.nameFR}
+                    alt={
+                      lang === "FR" ? item.product.nameFR : item.product.nameEN
+                    }
                     fill
                     className="object-cover"
                   />
@@ -252,11 +236,10 @@ export default function HomePage() {
                     {item.product.price * item.quantity}.00 $
                   </span>
 
-                  {/* Selecteur de Quantité premium */}
                   <div className="flex items-center gap-2 mt-2">
                     <button
                       onClick={() => updateQuantity(item.product.id, -1)}
-                      className="w-6 h-6 border border-neutral-700 hover:border-red-500 flex items-center justify-center active:scale-95 transition"
+                      className="w-6 h-6 border border-neutral-700 hover:border-red-500 flex items-center justify-center active:scale-95 transition cursor-pointer"
                     >
                       -
                     </button>
@@ -265,7 +248,7 @@ export default function HomePage() {
                     </span>
                     <button
                       onClick={() => updateQuantity(item.product.id, 1)}
-                      className="w-6 h-6 border border-neutral-700 hover:border-red-500 flex items-center justify-center active:scale-95 transition"
+                      className="w-6 h-6 border border-neutral-700 hover:border-red-500 flex items-center justify-center active:scale-95 transition cursor-pointer"
                     >
                       +
                     </button>
@@ -289,7 +272,9 @@ export default function HomePage() {
               onClick={sendWhatsAppOrder}
               className="w-full bg-red-600 hover:bg-red-700 text-white font-black py-4 uppercase tracking-widest transition flex items-center justify-center gap-2 shadow-lg cursor-pointer"
             >
-              💬 CONFIRMER VIA WHATSAPP
+              {lang === "FR"
+                ? "💬 CONFIRMER VIA WHATSAPP"
+                : "💬 CONFIRM VIA WHATSAPP"}
             </button>
           </div>
         )}
@@ -311,29 +296,26 @@ export default function HomePage() {
           </span>
         </div>
 
-        {/* Contrôles à droite */}
         <div className="flex items-center gap-2">
-          {/* Bouton Panier flottant de la navbar */}
           <button
             onClick={() => setIsCartOpen(true)}
             className="font-mono text-xs tracking-widest border border-red-600 bg-red-600 text-white px-3 py-1.5 transition uppercase font-black hover:bg-transparent hover:text-red-500 relative cursor-pointer"
           >
-            🛒 PANIER ({getCartItemsCount()})
+            🛒 ({getCartItemsCount()})
           </button>
 
-          {/* Bouton Checkout direct requis */}
           {cart.length > 0 && (
             <button
               onClick={sendWhatsAppOrder}
               className="hidden md:inline-block font-mono text-xs tracking-widest border border-emerald-600 bg-emerald-600 text-white px-3 py-1.5 transition uppercase font-black hover:bg-emerald-700 cursor-pointer"
             >
-              ⚡ PASSER COMMANDE
+              {lang === "FR" ? "⚡ PASSER COMMANDE" : "⚡ CHECKOUT NOW"}
             </button>
           )}
 
           <button
             onClick={() => setIsLightMode(!isLightMode)}
-            className={`font-mono text-xs tracking-widest border px-3 py-1.5 transition uppercase ${
+            className={`font-mono text-xs tracking-widest border px-3 py-1.5 transition uppercase cursor-pointer ${
               isLightMode
                 ? "border-neutral-400 bg-white text-black"
                 : "border-neutral-800 bg-black/40 text-white"
@@ -344,7 +326,7 @@ export default function HomePage() {
 
           <button
             onClick={() => setLang(lang === "FR" ? "EN" : "FR")}
-            className={`font-mono text-xs tracking-widest border px-3 py-1.5 transition uppercase ${
+            className={`font-mono text-xs tracking-widest border px-3 py-1.5 transition uppercase cursor-pointer ${
               isLightMode
                 ? "border-neutral-400 bg-white text-black"
                 : "border-neutral-800 bg-black/40 text-white"
@@ -355,170 +337,224 @@ export default function HomePage() {
         </div>
       </header>
 
-      {/* SECTION 1 : CARROUSEL IMMERSIF (Supporte Swipe tactile et Flèches) */}
-      <section
-        className="min-h-screen grid grid-cols-1 lg:grid-cols-12 relative items-center pt-24 lg:pt-0 touch-pan-y"
-        onTouchStart={handleTouchStart}
-        onTouchEnd={handleTouchEnd}
-      >
-        {/* Flèches de navigation d'image Desktop tactiques */}
-        <div className="absolute top-1/2 left-4 -translate-y-1/2 z-30 hidden md:block">
-          <button
-            onClick={handlePrev}
-            className="w-12 h-12 rounded-full border border-neutral-700/80 bg-black/50 hover:bg-red-600 hover:border-red-600 text-white flex items-center justify-center text-lg font-black transition active:scale-90 cursor-pointer"
-          >
-            ‹
-          </button>
-        </div>
-        <div className="absolute top-1/2 right-4 -translate-y-1/2 z-30 hidden md:block">
-          <button
-            onClick={handleNext}
-            className="w-12 h-12 rounded-full border border-neutral-700/80 bg-black/50 hover:bg-red-600 hover:border-red-600 text-white flex items-center justify-center text-lg font-black transition active:scale-90 cursor-pointer"
-          >
-            ›
-          </button>
-        </div>
-
-        {/* Infos gauche */}
-        <div className="lg:col-span-5 px-6 md:px-12 xl:px-20 space-y-6 z-10">
-          <div className="space-y-1">
-            <span className="font-mono text-xs text-red-600 tracking-widest uppercase font-bold">
-              [ {activeIndex + 1} / {products.length} ]
-            </span>
-            <h2 className="text-4xl md:text-6xl font-black uppercase tracking-tighter italic leading-none block">
-              {lang === "FR" ? currentProduct.nameFR : currentProduct.nameEN}
-            </h2>
-          </div>
-
-          <p
-            className={`text-sm font-light max-w-md leading-relaxed ${isLightMode ? "text-neutral-600" : "text-neutral-400"}`}
-          >
-            {lang === "FR" ? currentProduct.descFR : currentProduct.descEN}
-          </p>
-
-          <div className="pt-4 flex items-center gap-6">
-            <span className="text-2xl font-mono font-black text-red-600">
-              {currentProduct.price}.00 $
-            </span>
-            <button
-              onClick={() => addToCart(currentProduct)}
-              className={`font-black text-xs uppercase tracking-widest px-6 py-3.5 skew-x-[-8deg] transition shadow-lg cursor-pointer ${
-                isLightMode
-                  ? "bg-black text-white hover:bg-red-600 hover:text-black"
-                  : "bg-white text-black hover:bg-red-600 hover:text-white"
-              }`}
-            >
-              {lang === "FR" ? "AJOUTER AU PANIER" : "ADD TO CART"}
-            </button>
-          </div>
-        </div>
-
-        {/* Visuel droit */}
-        <div
-          className={`lg:col-span-7 w-full h-[60vh] lg:min-h-screen relative transition-colors duration-500 ${
-            isLightMode
-              ? "bg-neutral-200 border-l border-neutral-300"
-              : "bg-neutral-900 border-l border-neutral-950"
-          }`}
+      {/* SECTION 1 : CARROUSEL IMMERSIF STYLE BERYL SHOP (IMAGE EN HAUT, TEXTE EN DESSOUS) */}
+      {currentProduct ? (
+        <section
+          className="min-h-screen flex flex-col justify-start relative pt-20 touch-pan-y"
+          onTouchStart={handleTouchStart}
+          onTouchEnd={handleTouchEnd}
         >
-          <Image
-            src={currentProduct.img}
-            alt={currentProduct.nameFR}
-            fill
-            priority
-            className={`object-cover contrast-125 brightness-95 transition-all duration-700 ${
-              isLightMode
-                ? "grayscale-0"
-                : "grayscale contrast-125 brightness-90"
-            }`}
-            unoptimized
-          />
-          <div
-            className={`absolute inset-0 bg-linear-to-t lg:bg-linear-to-r via-transparent to-transparent ${
-              isLightMode ? "from-[#f5f5f7]" : "from-[#0b0b0c]"
-            }`}
-          />
-        </div>
+          {/* Zone Visuelle Principale (Prend la majorité de l'écran en haut) */}
+          <div className="w-full h-[55vh] md:h-[65vh] relative group select-none">
+            {/* Flèches Tactiques de navigation - Visibles sur Mobile et Desktop */}
+            <div className="absolute inset-x-4 top-1/2 -translate-y-1/2 flex justify-between items-center z-30 pointer-events-none">
+              <button
+                onClick={handlePrev}
+                className="w-10 h-10 rounded-full border border-neutral-700/80 bg-black/60 text-white flex items-center justify-center text-lg font-black transition active:scale-90 pointer-events-auto cursor-pointer hover:bg-red-600"
+              >
+                ‹
+              </button>
+              <button
+                onClick={handleNext}
+                className="w-10 h-10 rounded-full border border-neutral-700/80 bg-black/60 text-white flex items-center justify-center text-lg font-black transition active:scale-90 pointer-events-auto cursor-pointer hover:bg-red-600"
+              >
+                ›
+              </button>
+            </div>
 
-        {/* Indicateurs de navigation */}
-        <div className="absolute bottom-8 left-6 md:left-12 lg:left-20 flex gap-2 z-20">
-          {products.map((p, idx) => (
-            <button
-              key={p.id}
-              onClick={() => setActiveIndex(idx)}
-              className={`h-2 transition-all duration-300 cursor-pointer ${
-                idx === activeIndex
-                  ? "w-12 bg-red-600"
-                  : isLightMode
-                    ? "w-3 bg-neutral-300 hover:bg-neutral-400"
-                    : "w-3 bg-neutral-800 hover:bg-neutral-600"
-              }`}
-            />
-          ))}
+            {/* Image cliquable pour ouvrir le Zoom */}
+            <div
+              className="w-full h-full relative cursor-zoom-in"
+              onClick={() => setIsZoomOpen(true)}
+            >
+              <Image
+                src={currentProduct.img}
+                alt={
+                  lang === "FR" ? currentProduct.nameFR : currentProduct.nameEN
+                }
+                fill
+                priority
+                className={`object-cover contrast-125 transition-all duration-700 ${
+                  isLightMode
+                    ? "grayscale-0 brightness-95"
+                    : "grayscale contrast-125 brightness-90"
+                }`}
+                unoptimized
+              />
+              <div
+                className={`absolute inset-0 bg-linear-to-t via-transparent to-transparent ${
+                  isLightMode ? "from-[#f5f5f7]" : "from-[#0b0b0c]"
+                }`}
+              />
+            </div>
+          </div>
+
+          {/* Zone d'information et d'actions (Située EN DESSOUS de l'image) */}
+          <div className="w-full max-w-4xl mx-auto px-6 md:px-12 py-8 text-center space-y-6 z-10">
+            <div className="space-y-2">
+              <span className="font-mono text-xs text-red-600 tracking-widest uppercase font-bold block">
+                [ {activeIndex + 1} / {products.length} ]
+              </span>
+              <h2 className="text-3xl md:text-5xl font-black uppercase tracking-tighter italic leading-none">
+                {lang === "FR" ? currentProduct.nameFR : currentProduct.nameEN}
+              </h2>
+              <span className="text-xl font-mono font-black text-red-600 block pt-1">
+                {currentProduct.price}.00 $
+              </span>
+            </div>
+
+            <p
+              className={`text-sm font-light max-w-2xl mx-auto leading-relaxed ${isLightMode ? "text-neutral-600" : "text-neutral-400"}`}
+            >
+              {lang === "FR" ? currentProduct.descFR : currentProduct.descEN}
+            </p>
+
+            <div className="pt-2">
+              <button
+                onClick={() => addToCart(currentProduct)}
+                className={`font-black text-xs uppercase tracking-widest px-10 py-4 skew-x-[-8deg] transition shadow-lg cursor-pointer ${
+                  isLightMode
+                    ? "bg-black text-white hover:bg-red-600"
+                    : "bg-white text-black hover:bg-red-600 hover:text-white"
+                }`}
+              >
+                {lang === "FR" ? "AJOUTER AU PANIER" : "ADD TO CART"}
+              </button>
+            </div>
+
+            {/* Points indicateurs horizontaux */}
+            <div className="flex justify-center gap-2 pt-4">
+              {products.map((p, idx) => (
+                <button
+                  key={p.id}
+                  onClick={() => setActiveIndex(idx)}
+                  className={`h-1.5 transition-all duration-300 cursor-pointer ${
+                    idx === activeIndex
+                      ? "w-10 bg-red-600"
+                      : isLightMode
+                        ? "w-2 bg-neutral-300"
+                        : "w-2 bg-neutral-800"
+                  }`}
+                />
+              ))}
+            </div>
+          </div>
+        </section>
+      ) : (
+        <div className="min-h-screen bg-[#0b0b0c] text-white flex flex-col items-center justify-center text-center p-4">
+          <h1 className="text-red-600 font-black text-xl tracking-wider uppercase mb-2">
+            SHIRTIME LAB
+          </h1>
+          <p className="text-neutral-500 font-mono text-xs uppercase">
+            {lang === "FR"
+              ? "Le catalogue est en cours de mise à jour."
+              : "The catalog is currently being updated."}
+          </p>
         </div>
-      </section>
+      )}
+
+      {/* MODAL DE ZOOM ULTRA-HAUTE QUALITÉ (Pinch-to-zoom natif supporté via viewport) */}
+      {isZoomOpen && currentProduct && (
+        <div
+          className="fixed inset-0 z-50 bg-black/95 flex items-center justify-center backdrop-blur-md animate-fadeIn"
+          onClick={() => setIsZoomOpen(false)}
+        >
+          {/* Bouton Fermer */}
+          <button
+            className="absolute top-6 right-6 text-white text-xl font-mono p-4 z-50 bg-black/40 rounded-full border border-neutral-800 hover:text-red-500 cursor-pointer transition"
+            onClick={() => setIsZoomOpen(false)}
+          >
+            ✕
+          </button>
+
+          {/* Conteneur Image avec gestion du comportement tactile natif */}
+          <div
+            className="relative w-full h-full max-w-5xl max-h-[85vh] p-4 flex items-center justify-center overflow-auto touch-auto"
+            onClick={(e) => e.stopPropagation()}
+          >
+            <img
+              src={currentProduct.img}
+              alt="Zoomed Product View"
+              className="max-w-full max-h-full object-contain selection:bg-transparent rounded-xs select-none pointer-events-auto brightness-100 contrast-100"
+              style={{ transformOrigin: "center center" }}
+            />
+          </div>
+
+          <div className="absolute bottom-6 left-1/2 -translate-x-1/2 font-mono text-[10px] text-neutral-500 uppercase tracking-widest text-center pointer-events-none">
+            {lang === "FR"
+              ? "📱 Écartez les doigts pour zoomer"
+              : "📱 Pinch to zoom artwork"}
+          </div>
+        </div>
+      )}
 
       {/* SECTION 2 : FOCUS TECHNIQUE & VIDÉO LOOP */}
-      <section
-        className={`transition-colors duration-500 py-20 px-6 md:px-12 xl:px-20 grid grid-cols-1 lg:grid-cols-2 gap-12 items-center ${
-          isLightMode
-            ? "bg-white border-t border-neutral-200"
-            : "bg-black border-t border-neutral-900"
-        }`}
-      >
-        {/* Conteneur Vidéo */}
-        <div
-          className={`relative w-full aspect-video overflow-hidden border transition-colors duration-500 ${
+      {currentProduct && (
+        <section
+          className={`transition-colors duration-500 py-20 px-6 md:px-12 xl:px-20 grid grid-cols-1 lg:grid-cols-2 gap-12 items-center ${
             isLightMode
-              ? "bg-neutral-100 border-neutral-200"
-              : "bg-neutral-950 border-neutral-900"
+              ? "bg-white border-t border-neutral-200"
+              : "bg-black border-t border-neutral-900"
           }`}
         >
-          <video
-            key={currentProduct.video}
-            autoPlay
-            loop
-            muted
-            playsInline
-            className={`w-full h-full object-cover transition duration-500 ${isLightMode ? "opacity-95" : "opacity-80"}`}
-          >
-            <source src={currentProduct.video} type="video/mp4" />
-          </video>
+          {/* Conteneur Vidéo */}
           <div
-            className={`absolute bottom-4 left-4 backdrop-blur-sm px-3 py-1 border font-mono text-[10px] uppercase tracking-widest ${
+            className={`relative w-full aspect-video overflow-hidden border transition-colors duration-500 ${
               isLightMode
-                ? "bg-white/80 border-neutral-300 text-red-600"
-                : "bg-black/70 border-neutral-800 text-red-500"
+                ? "bg-neutral-100 border-neutral-200"
+                : "bg-neutral-950 border-neutral-900"
             }`}
           >
-            • Cloudinary Stream Active
+            <video
+              key={currentProduct.video}
+              autoPlay
+              loop
+              muted
+              playsInline
+              className={`w-full h-full object-cover transition duration-500 ${isLightMode ? "opacity-95" : "opacity-80"}`}
+            >
+              <source src={currentProduct.video} type="video/mp4" />
+            </video>
+            <div
+              className={`absolute bottom-4 left-4 backdrop-blur-sm px-3 py-1 border font-mono text-[10px] uppercase tracking-widest ${
+                isLightMode
+                  ? "bg-white/80 border-neutral-300 text-red-600"
+                  : "bg-black/70 border-neutral-800 text-red-500"
+              }`}
+            >
+              • Cloudinary Stream Active
+            </div>
           </div>
-        </div>
 
-        {/* Fiche Technique */}
-        <div className="space-y-6">
-          <div>
-            <span className="text-xs font-mono text-neutral-500 uppercase tracking-widest block mb-1">
-              SPECIFICATIONS MATÉRIELLES
-            </span>
-            <h3 className="text-2xl font-black uppercase italic tracking-tight">
-              {lang === "FR" ? "FICHE DÉTAILLÉE" : "TECHNICAL SPECIFICATIONS"}
-            </h3>
+          {/* Fiche Technique */}
+          <div className="space-y-6">
+            <div>
+              <span className="text-xs font-mono text-neutral-500 uppercase tracking-widest block mb-1">
+                {lang === "FR"
+                  ? "SPECIFICATIONS MATÉRIELLES"
+                  : "HARDWARE SPECIFICATIONS"}
+              </span>
+              <h3 className="text-2xl font-black uppercase italic tracking-tight">
+                {lang === "FR" ? "FICHE DÉTAILLÉE" : "TECHNICAL SPECIFICATIONS"}
+              </h3>
+            </div>
+
+            <p
+              className={`text-sm font-light leading-relaxed whitespace-pre-line p-6 border font-mono transition-colors duration-500 ${
+                isLightMode
+                  ? "bg-neutral-50 border-neutral-200 text-neutral-800"
+                  : "bg-neutral-900/40 border-neutral-900 text-neutral-400"
+              }`}
+            >
+              {lang === "FR"
+                ? currentProduct.detailFR
+                : currentProduct.detailEN}
+            </p>
           </div>
+        </section>
+      )}
 
-          <p
-            className={`text-sm font-light leading-relaxed whitespace-pre-line p-6 border font-mono transition-colors duration-500 ${
-              isLightMode
-                ? "bg-neutral-50 border-neutral-200 text-neutral-800"
-                : "bg-neutral-900/40 border-neutral-900 text-neutral-400"
-            }`}
-          >
-            {lang === "FR" ? currentProduct.detailFR : currentProduct.detailEN}
-          </p>
-        </div>
-      </section>
-
-      {/* 🏁 SECTION COMMANDE FOOTER APRÈS LA VIDÉO (Inspiré de l'esthétique Vercel) */}
+      {/* 🏁 SECTION COMMANDE FOOTER APRÈS LA VIDÉO */}
       <section
         className={`py-12 border-t text-center px-6 transition-colors ${
           isLightMode
@@ -539,8 +575,12 @@ export default function HomePage() {
             className="w-full bg-red-600 hover:bg-red-700 text-white font-mono text-xs uppercase tracking-widest font-black py-4 px-8 shadow-xl transition inline-flex items-center justify-center gap-3 cursor-pointer"
           >
             {cart.length > 0
-              ? `🔴 ENVOYER LA COMMANDE (${getCartTotal()}.00 $)`
-              : "🛒 OUVRIR LE PANIER POUR COMMANDER"}
+              ? lang === "FR"
+                ? `🔴 ENVOYER LA COMMANDE (${getCartTotal()}.00 $)`
+                : `🔴 SEND ORDER NOW (${getCartTotal()}.00 $)`
+              : lang === "FR"
+                ? "🛒 OUVRIR LE PANIER POUR COMMANDER"
+                : "🛒 OPEN CART TO PLACE ORDER"}
           </button>
         </div>
       </section>
@@ -553,8 +593,7 @@ export default function HomePage() {
             : "border-neutral-900 text-neutral-600"
         }`}
       >
-        © {new Date().getFullYear()} SHIRTIME LABORATORY. ECOSYSTEM THEME
-        ADAPTATION STABLE.
+        © {new Date().getFullYear()} SHIRTIME SHOP.
       </footer>
     </main>
   );
