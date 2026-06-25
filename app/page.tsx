@@ -42,20 +42,39 @@ export default function HomePage() {
   useEffect(() => {
     const initializeShop = async () => {
       try {
+        let freshProducts: Product[] = [];
+
+        // 1. On récupère les produits vivants de la base de données
         const res = await fetch("/api/products");
         if (res.ok) {
-          const data = await res.json();
-          setProducts(data);
+          freshProducts = await res.json();
+          setProducts(freshProducts);
         }
 
+        // 2. On récupère le panier local
         const savedCart = localStorage.getItem("shirtime_cart");
-        if (savedCart) {
+        if (savedCart && freshProducts.length > 0) {
           const parsedCart = JSON.parse(savedCart);
+
           if (Array.isArray(parsedCart)) {
-            const validCart = parsedCart.filter(
-              (item) => item && item.product && item.product.id,
-            );
+            // 🔍 On filtre : l'élément doit être valide ET son produit doit encore exister dans freshProducts
+            const validCart = parsedCart.filter((item) => {
+              const hasValidStructure = item && item.product && item.product.id;
+              if (!hasValidStructure) return false;
+
+              // Vérifie si le produit fait toujours partie du catalogue actif
+              const productStillExists = freshProducts.some(
+                (p) => p.id === item.product.id,
+              );
+              return productStillExists;
+            });
+
+            // 💾 Mise à jour des états locaux et du localStorage nettoyé
             setCart(validCart);
+            if (validCart.length !== parsedCart.length) {
+              // S'il y a eu une différence, on enregistre la version nettoyée pour éviter les bugs futurs
+              localStorage.setItem("shirtime_cart", JSON.stringify(validCart));
+            }
           }
         }
       } catch (err) {
@@ -118,8 +137,8 @@ export default function HomePage() {
 
     let message =
       lang === "FR"
-        ? `🔴 *NOUVELLE COMMANDE SHIRTIME SHOP*\n\n`
-        : `🔴 *NEW SHIRTIME SHOP ORDER*\n\n`;
+        ? `🔴 *Je souhaite passer une commande pour les articles suivants*\n\n`
+        : `🔴 *I want to place an order for the following items*\n\n`;
 
     cart.forEach((item, index) => {
       const name = lang === "FR" ? item.product.nameFR : item.product.nameEN;
@@ -137,6 +156,10 @@ export default function HomePage() {
       `https://wa.me/${WHATSAPP_NUMBER}?text=${encodedMessage}`,
       "_blank",
     );
+
+    // 🧹 NETTOYAGE DU PANIER APRÈS LA COMMANDE
+    setCart([]); // Vide l'écran de l'utilisateur instantanément
+    localStorage.removeItem("shirtime_cart"); // Supprime du stockage du navigateur
   };
 
   // --- NAVIGATION DU CARROUSEL ---
