@@ -35,7 +35,7 @@ export default function HomePage() {
   const [touchStartX, setTouchStartX] = useState<number | null>(null);
 
   // Numéro WhatsApp de destination (Ex: "243xxxxxxxxx" ou "336xxxxxxxxx" sans le +)
-  const WHATSAPP_NUMBER = "243000000000";
+  const WHATSAPP_NUMBER = "24397000000"; // Remplace par ton numéro WhatsApp réel
 
   // Chargement initial (Produits + Panier stocké)
   useEffect(() => {
@@ -213,7 +213,7 @@ export default function HomePage() {
       >
         <div className="p-6 border-b border-neutral-800 flex justify-between items-center bg-black/10">
           <span className="font-black text-sm tracking-widest">
-            🛒 MON PANIER ({getCartItemsCount()})
+            🛒 ({getCartItemsCount()})
           </span>
           <button
             onClick={() => setIsCartOpen(false)}
@@ -339,7 +339,7 @@ export default function HomePage() {
                 : "border-neutral-800 bg-black/40 text-white"
             }`}
           >
-            {isLightMode ? "🌙 SOMBRE" : "☀️ BLANC"}
+            {isLightMode ? "🌙 " : "☀️"}
           </button>
 
           <button
