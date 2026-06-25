@@ -281,7 +281,7 @@ export default function HomePage() {
       </div>
 
       {/* BARRE DE NAVIGATION */}
-      <header className="absolute top-0 left-0 w-full z-40 p-6 md:p-10 flex justify-between items-center mix-blend-difference">
+      <header className="absolute top-0 left-0 w-full z-40 p-4 md:p-10 flex justify-between items-center mix-blend-difference gap-2">
         <div className="flex items-center gap-3">
           <div className="relative w-8 h-8 bg-white rounded-full p-0.5 animate-[spin_12s_linear_infinite]">
             <Image
@@ -296,14 +296,17 @@ export default function HomePage() {
           </span>
         </div>
 
-        <div className="flex items-center gap-2">
+        <div className="flex items-center gap-1 md:gap-2 rounded-sm">
+          {/* Bouton Panier */}
           <button
             onClick={() => setIsCartOpen(true)}
-            className="font-mono text-xs tracking-widest border border-red-600 bg-red-600 text-white px-3 py-1.5 transition uppercase font-black hover:bg-transparent hover:text-red-500 relative cursor-pointer"
+            className="font-mono text-xs tracking-widest border border-red-600 bg-red-600 text-white px-2 py-1.5 md:px-3 transition uppercase font-black hover:bg-transparent hover:text-red-500 relative cursor-pointer flex items-center gap-1"
           >
-            🛒 ({getCartItemsCount()})
+            🛒 <span className="hidden xs:inline">PANIER</span> (
+            {getCartItemsCount()})
           </button>
 
+          {/* Bouton Commander Direct */}
           {cart.length > 0 && (
             <button
               onClick={sendWhatsAppOrder}
@@ -313,26 +316,32 @@ export default function HomePage() {
             </button>
           )}
 
+          {/* Bouton Light Mode : Émoji seul sur mobile, texte masqué */}
           <button
             onClick={() => setIsLightMode(!isLightMode)}
-            className={`font-mono text-xs tracking-widest border px-3 py-1.5 transition uppercase cursor-pointer ${
+            className={`font-mono text-xs tracking-widest border px-2.5 py-1.5 md:px-3 transition uppercase cursor-pointer flex items-center gap-1 ${
               isLightMode
                 ? "border-neutral-400 bg-white text-black"
                 : "border-neutral-800 bg-black/40 text-white"
             }`}
           >
-            {isLightMode ? "🌙 " : "☀️"}
+            <span>{isLightMode ? "🌙" : "☀️"}</span>
+            <span className="hidden md:inline">
+              {isLightMode ? "DARK" : "LIGHT"}
+            </span>
           </button>
 
+          {/* Bouton Langue : Icône + Code court ("FR"/"EN") */}
           <button
             onClick={() => setLang(lang === "FR" ? "EN" : "FR")}
-            className={`font-mono text-xs tracking-widest border px-3 py-1.5 transition uppercase cursor-pointer ${
+            className={`font-mono text-xs tracking-widest border px-2.5 py-1.5 md:px-3 transition uppercase cursor-pointer flex items-center gap-1 ${
               isLightMode
                 ? "border-neutral-400 bg-white text-black"
                 : "border-neutral-800 bg-black/40 text-white"
             }`}
           >
-            🌐 {lang}
+            <span>🌐</span>
+            <span className="text-[10px] md:text-xs">{lang}</span>
           </button>
         </div>
       </header>
@@ -374,6 +383,7 @@ export default function HomePage() {
                 }
                 fill
                 priority
+                loading="eager"
                 className={`object-cover contrast-125 transition-all duration-700 ${
                   isLightMode
                     ? "grayscale-0 brightness-95"
@@ -443,7 +453,7 @@ export default function HomePage() {
       ) : (
         <div className="min-h-screen bg-[#0b0b0c] text-white flex flex-col items-center justify-center text-center p-4">
           <h1 className="text-red-600 font-black text-xl tracking-wider uppercase mb-2">
-            SHIRTIME LAB
+            SHIRTIME SHOP
           </h1>
           <p className="text-neutral-500 font-mono text-xs uppercase">
             {lang === "FR"
@@ -522,7 +532,7 @@ export default function HomePage() {
                   : "bg-black/70 border-neutral-800 text-red-500"
               }`}
             >
-              • Cloudinary Stream Active
+              • Stream Active
             </div>
           </div>
 

@@ -5,7 +5,7 @@ import { auth } from "@/lib/firebase";
 import { onAuthStateChanged, signOut } from "firebase/auth";
 import { useRouter } from "next/navigation";
 import { db } from "@/lib/firebase"; // 👈 Vérifiez bien le chemin vers votre fichier de config Firebase
-import { doc, deleteDoc } from "firebase/firestore"; // 👈 Ces fonctions doivent être importées séparément
+import { doc, deleteDoc, updateDoc } from "firebase/firestore"; // 👈 Ces fonctions doivent être importées séparément
 
 type Product = {
   id: string;
@@ -28,6 +28,10 @@ export default function ManageProductsPage() {
   const [editForm, setEditForm] = useState<Partial<Product>>({});
   const [message, setMessage] = useState("");
   const router = useRouter();
+
+  // États pour gérer les notifications de succès/erreur instantanées
+  const [statusMessage, setStatusMessage] = useState("");
+  const [statusType, setStatusType] = useState<"success" | "error" | "">("");
 
   // 1. PROTECTION DE LA PAGE PAR AUTHENTIFICATION
   useEffect(() => {
@@ -69,26 +73,49 @@ export default function ManageProductsPage() {
     setEditForm({ ...editForm, [e.target.name]: e.target.value });
   };
 
-  // UPDATE : Envoi des modifications textuelles (incluant les liens Cloudinary existants)
-  const handleUpdate = async (id: string) => {
-    try {
-      const res = await fetch("/api/products", {
-        method: "PUT",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          ...editForm,
-          id,
-          price: parseFloat(String(editForm.price)),
-        }),
-      });
+  // UPDATE : Mise à jour directe sur Firestore (ancienne logique)
 
-      if (res.ok) {
-        setMessage("🎉 Modifications enregistrées !");
-        setEditingId(null);
-        fetchProducts();
-      }
-    } catch {
-      setMessage("❌ Erreur lors de la mise à jour");
+  const updateProductOptimistic = async (
+    productId: string,
+    updatedData: Partial<Product>,
+  ) => {
+    // 1. 💾 SAUVEGARDE DE SECOURS : On garde une copie de l'ancien état au cas où
+    const previousProducts = [...products];
+
+    // 2. ⚡ MISE À JOUR INSTANTANÉE (Optimiste) : On change l'écran immédiatement
+    setProducts((prevProducts) =>
+      prevProducts.map((p) =>
+        p.id === productId ? { ...p, ...updatedData } : p,
+      ),
+    );
+
+    setEditingId(null);
+
+    // On affiche tout de suite un message vert rassurant
+    setStatusType("success");
+    setStatusMessage("⚡ Modification prise en compte localement...");
+
+    // 3. ☁️ OPÉRATION EN ARRIÈRE-PLAN : On lance l'écriture Firestore sans bloquer l'utilisateur
+    try {
+      const productRef = doc(db, "products", productId);
+      await updateDoc(productRef, updatedData);
+
+      // Une fois l'écriture Firestore confirmée par le cloud
+      setStatusMessage("✅ Synchronisé avec la base de données !");
+
+      // On efface le message après 3 secondes
+      setTimeout(() => {
+        setStatusMessage("");
+        setStatusType("");
+      }, 3000);
+    } catch (error) {
+      console.error("Erreur Firestore, retour en arrière...", error);
+
+      // 🔄 ROLLBACK : Si Firestore refuse (ex: pas de réseau, permission denied), on remet l'ancienne valeur
+      setProducts(previousProducts);
+
+      setStatusType("error");
+      setStatusMessage("❌ Échec de la synchronisation. Modification annulée.");
     }
   };
 
@@ -169,6 +196,18 @@ export default function ManageProductsPage() {
   return (
     <main className="min-h-screen bg-[#0b0b0c] text-white p-6 md:p-12 font-sans selection:bg-orange-500">
       <div className="max-w-6xl mx-auto">
+        {/* 🔔 En-tête de notification fixe et discret pour rassurer l'admin */}
+        {statusMessage && (
+          <div
+            className={`fixed top-4 right-4 z-50 p-4 font-mono text-xs border rounded-sm shadow-xl transition-all ${
+              statusType === "success"
+                ? "bg-emerald-950/90 border-emerald-500 text-emerald-400"
+                : "bg-red-950/90 border-red-500 text-red-400"
+            }`}
+          >
+            {statusMessage}
+          </div>
+        )}
         <div className="flex justify-between items-center mb-8 border-b border-neutral-800 pb-4">
           <div>
             <h1 className="text-2xl font-black uppercase tracking-wider text-orange-500 italic">
@@ -269,7 +308,9 @@ export default function ManageProductsPage() {
                     </div>
                     <div className="flex gap-2 pt-2">
                       <button
-                        onClick={() => handleUpdate(product.id)}
+                        onClick={() =>
+                          updateProductOptimistic(product.id, editForm)
+                        }
                         className="bg-orange-500 text-black px-4 py-2 font-bold uppercase tracking-widest text-[10px]"
                       >
                         Sauvegarder
