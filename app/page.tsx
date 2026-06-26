@@ -311,6 +311,7 @@ export default function HomePage() {
               src="/file_0000000037946230a5bbd34766d5b786.png"
               alt="SHIRTIME"
               fill
+              sizes="contain"
               className="object-contain"
             />
           </div>
@@ -531,31 +532,80 @@ export default function HomePage() {
           }`}
         >
           {/* Conteneur Vidéo */}
-          <div
-            className={`relative w-full aspect-video overflow-hidden border transition-colors duration-500 ${
-              isLightMode
-                ? "bg-neutral-100 border-neutral-200"
-                : "bg-neutral-950 border-neutral-900"
-            }`}
-          >
-            <video
-              key={currentProduct.video}
-              autoPlay
-              loop
-              muted
-              playsInline
-              className={`w-full h-full object-cover transition duration-500 ${isLightMode ? "opacity-95" : "opacity-80"}`}
-            >
-              <source src={currentProduct.video} type="video/mp4" />
-            </video>
+          {/* Conteneur Vidéo au format Short (9:16) avec Lecture Automatique au Scroll */}
+          <div className="flex justify-center items-center w-full py-4">
             <div
-              className={`absolute bottom-4 left-4 backdrop-blur-sm px-3 py-1 border font-mono text-[10px] uppercase tracking-widest ${
+              className={`relative w-full max-w-[360px] aspect-[9/16] overflow-hidden border rounded-md transition-colors duration-500 shadow-2xl group cursor-pointer ${
                 isLightMode
-                  ? "bg-white/80 border-neutral-300 text-red-600"
-                  : "bg-black/70 border-neutral-800 text-red-500"
+                  ? "bg-neutral-100 border-neutral-200"
+                  : "bg-neutral-950 border-neutral-900"
               }`}
+              onClick={(e) => {
+                const videoEl = e.currentTarget.querySelector("video");
+                if (videoEl) {
+                  // Active le son dès le premier clic/touch interactif
+                  if (videoEl.muted) videoEl.muted = false;
+
+                  // Permet quand même à l'utilisateur de faire pause/play manuellement au clic
+                  if (videoEl.paused) {
+                    videoEl.play();
+                  } else {
+                    videoEl.pause();
+                  }
+                }
+              }}
             >
-              • Stream Active
+              <video
+                key={currentProduct.video}
+                loop
+                muted // Obligatoire pour que le navigateur autorise le démarrage automatique au scroll
+                playsInline
+                className={`w-full h-full object-cover transition duration-500 ${
+                  isLightMode ? "opacity-95" : "opacity-80"
+                }`}
+                ref={(el) => {
+                  if (!el) return;
+
+                  // 👁️ Configuration de l'Intersection Observer directement sur l'élément HTML
+                  const observer = new IntersectionObserver(
+                    ([entry]) => {
+                      if (entry.isIntersecting) {
+                        el.play().catch((err) =>
+                          console.log("Lecture automatique bloquée :", err),
+                        );
+                      } else {
+                        el.pause();
+                      }
+                    },
+                    {
+                      // Déclenche l'action dès que 60% de la vidéo est visible à l'écran
+                      threshold: 0.6,
+                    },
+                  );
+
+                  observer.observe(el);
+                }}
+              >
+                <source src={currentProduct.video} type="video/mp4" />
+              </video>
+
+              {/* Indicateur visuel pour guider l'utilisateur */}
+              <div className="absolute inset-0 flex items-center justify-center bg-black/20 opacity-0 group-hover:opacity-100 transition-opacity duration-300 pointer-events-none">
+                <div className="bg-black/60 backdrop-blur-xs p-4 rounded-full text-white text-xs font-mono uppercase tracking-widest border border-neutral-800">
+                  🔊 Activer le son / Pause
+                </div>
+              </div>
+
+              {/* Badge de statut technique */}
+              <div
+                className={`absolute bottom-4 left-4 backdrop-blur-sm px-3 py-1 border font-mono text-[10px] uppercase tracking-widest z-10 ${
+                  isLightMode
+                    ? "bg-white/80 border-neutral-300 text-red-600"
+                    : "bg-black/70 border-neutral-800 text-red-500"
+                }`}
+              >
+                • Auto Play Scroll Active
+              </div>
             </div>
           </div>
 
@@ -563,12 +613,10 @@ export default function HomePage() {
           <div className="space-y-6">
             <div>
               <span className="text-xs font-mono text-neutral-500 uppercase tracking-widest block mb-1">
-                {lang === "FR"
-                  ? "SPECIFICATIONS MATÉRIELLES"
-                  : "HARDWARE SPECIFICATIONS"}
+                {lang === "FR" ? "SPECIFICATIONS" : "SPECIFICATIONS"}
               </span>
               <h3 className="text-2xl font-black uppercase italic tracking-tight">
-                {lang === "FR" ? "FICHE DÉTAILLÉE" : "TECHNICAL SPECIFICATIONS"}
+                {lang === "FR" ? "DETAILS" : "DETAILS"}
               </h3>
             </div>
 
