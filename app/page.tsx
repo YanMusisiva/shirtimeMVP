@@ -24,7 +24,7 @@ export default function HomePage() {
   const [products, setProducts] = useState<Product[]>([]);
   const [activeIndex, setActiveIndex] = useState(0);
   const [lang, setLang] = useState<"FR" | "EN">("FR");
-  const [isLightMode, setIsLightMode] = useState(false);
+  const [isLightMode, setIsLightMode] = useState(true);
 
   // 🛒 Gestion du Panier & Sidebar
   const [cart, setCart] = useState<CartItem[]>([]);
@@ -410,8 +410,8 @@ export default function HomePage() {
                 loading="eager"
                 className={`object-cover contrast-125 transition-all duration-700 ${
                   isLightMode
-                    ? "grayscale-0 brightness-95"
-                    : "grayscale contrast-125 brightness-90"
+                    ? "grayscale-0 brightness-95 contrast-100"
+                    : "grayscale-0 contrast-110 brightness-90"
                 }`}
                 unoptimized
               />
