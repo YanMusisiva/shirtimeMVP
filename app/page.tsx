@@ -2,6 +2,12 @@
 import React, { useEffect, useState } from "react";
 import Image from "next/image";
 
+export type Category = {
+  id: string;
+  nameFR: string;
+  nameEN: string;
+};
+
 type Product = {
   id: string;
   nameEN: string;
@@ -13,6 +19,7 @@ type Product = {
   price: number;
   img: string;
   video: string;
+  categoryId?: string;
 };
 
 type CartItem = {
@@ -36,9 +43,13 @@ export default function HomePage() {
   // 📱 Pour détecter le Swipe sur mobile
   const [touchStartX, setTouchStartX] = useState<number | null>(null);
 
+  const [categories, setCategories] = useState<Category[]>([]);
+  const [activeCategoryId, setActiveCategoryId] = useState<string>("all");
+  const [isDropdownOpen, setIsDropdownOpen] = useState(false);
+
   const WHATSAPP_NUMBER = "243981984788";
 
-  // Chargement initial (Pas de loader bloquant l'affichage)
+  // Chargement initial (Pas de loader bloquant l'affichage, produits + catégories + panier nettoyé)
   useEffect(() => {
     const initializeShop = async () => {
       try {
@@ -51,7 +62,19 @@ export default function HomePage() {
           setProducts(freshProducts);
         }
 
-        // 2. On récupère le panier local
+        // 2. 🆕 On récupère les catégories depuis l'API
+        const resCategories = await fetch("/api/categories");
+        if (resCategories.ok) {
+          const categoriesData = await resCategories.json();
+          setCategories(categoriesData);
+
+          // Initialise la première catégorie par défaut si elle existe
+          if (categoriesData.length > 0) {
+            setActiveCategoryId(categoriesData[0].id);
+          }
+        }
+
+        // 3. On récupère le panier local et on le nettoie si nécessaire
         const savedCart = localStorage.getItem("shirtime_cart");
         if (savedCart && freshProducts.length > 0) {
           const parsedCart = JSON.parse(savedCart);
@@ -79,6 +102,9 @@ export default function HomePage() {
         }
       } catch (err) {
         console.error("Erreur lors de l'initialisation de la boutique", err);
+      } finally {
+        // Désactive le loader principal de l'application
+        // setLoading(false);
       }
     };
 
@@ -187,7 +213,18 @@ export default function HomePage() {
     setTouchStartX(null);
   };
 
-  const currentProduct = products[activeIndex] || null;
+  // const currentProduct = products[activeIndex] || null;
+  // 🔍 On filtre les produits : si un produit n'a pas de categoryId, il va dans la 1ère catégorie créée
+  const filteredProducts = products.filter((p) => {
+    if (!p.categoryId && categories.length > 0) {
+      return activeCategoryId === categories[0].id;
+    }
+    return p.categoryId === activeCategoryId;
+  });
+
+  // Sécurité si la catégorie sélectionnée est vide
+  const currentProduct =
+    filteredProducts[activeIndex] || filteredProducts[0] || products[0];
 
   return (
     <main
@@ -312,7 +349,7 @@ export default function HomePage() {
               alt="SHIRTIME"
               fill
               sizes="contain"
-              className="object-contain"
+              className="object-contain rounded-full"
             />
           </div>
           <span className="font-black tracking-widest text-sm uppercase italic text-white">
@@ -377,6 +414,78 @@ export default function HomePage() {
           onTouchStart={handleTouchStart}
           onTouchEnd={handleTouchEnd}
         >
+          {/* 📁 Conteneur Parent de l'image (Rappel de la structure existante) */}
+          <div className="relative w-full h-full group">
+            {/* Ton image actuelle */}
+            <Image
+              src={currentProduct.img}
+              alt={currentProduct.nameFR}
+              fill
+              priority
+              className={`object-cover transition-all duration-700 ${
+                isLightMode ? "brightness-100" : "brightness-90"
+              }`}
+              unoptimized
+            />
+
+            {/* 🏷️ NOUVEAU : Bouton Catégorie Flottant & Élégant */}
+            <div className="absolute top-4 left-4 z-30 font-mono">
+              <button
+                onClick={(e) => {
+                  e.stopPropagation(); // ⚡ IMPORTANT : Empêche d'ouvrir le modal de zoom quand on clique sur le bouton !
+                  setIsDropdownOpen(!isDropdownOpen);
+                }}
+                className="flex items-center gap-2 px-3 py-1.5 rounded-full text-[10px] tracking-widest uppercase cursor-pointer transition-all duration-300 backdrop-blur-md border border-white/10 bg-black/40 text-neutral-300 hover:text-white hover:bg-black/70 hover:scale-105 shadow-lg select-none"
+              >
+                <span className="w-1.5 h-1.5 rounded-full bg-red-500 animate-pulse" />
+                <span>{lang === "FR" ? "Collection : " : "Collection: "}</span>
+                <span className="font-bold text-white tracking-wider">
+                  {categories.find((c) => c.id === activeCategoryId)?.[
+                    lang === "FR" ? "nameFR" : "nameEN"
+                  ] || "T-SHIRTS"}
+                </span>
+                <span
+                  className={`text-[8px] transition-transform duration-300 ${isDropdownOpen ? "rotate-180" : ""}`}
+                >
+                  ▼
+                </span>
+              </button>
+
+              {/* Menu Déroulant Fluide & Minimaliste */}
+              {isDropdownOpen && (
+                <>
+                  {/* Un faux fond invisible pour fermer le menu si on clique n'importe où à côté */}
+                  <div
+                    className="fixed inset-0 z-40"
+                    onClick={() => setIsDropdownOpen(false)}
+                  />
+
+                  <div className="absolute top-9 left-0 bg-black/90 border border-neutral-800 p-1.5 rounded-md flex flex-col gap-0.5 min-w-[160px] z-50 shadow-2xl backdrop-blur-lg animate-in fade-in slide-in-from-top-2 duration-200">
+                    {categories.map((cat) => (
+                      <button
+                        key={cat.id}
+                        onClick={(e) => {
+                          e.stopPropagation(); // Évite le zoom
+                          setActiveCategoryId(cat.id);
+                          setActiveIndex(0); // Reset carrousel
+                          setIsDropdownOpen(false);
+                        }}
+                        className={`text-left text-[9px] p-2 tracking-widest uppercase transition-all duration-200 rounded-sm cursor-pointer ${
+                          activeCategoryId === cat.id
+                            ? "bg-white text-black font-bold"
+                            : "text-neutral-400 hover:bg-neutral-900 hover:text-white"
+                        }`}
+                      >
+                        {lang === "FR" ? cat.nameFR : cat.nameEN}
+                      </button>
+                    ))}
+                  </div>
+                </>
+              )}
+            </div>
+
+            {/* L'icône ou la zone de zoom globale reste active partout ailleurs sur l'image */}
+          </div>
           {/* Zone Visuelle Principale (Prend la majorité de l'écran en haut) */}
           <div className="w-full h-[55vh] md:h-[65vh] relative group select-none">
             {/* Flèches Tactiques de navigation - Visibles sur Mobile et Desktop */}

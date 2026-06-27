@@ -5,7 +5,19 @@ import { auth } from "@/lib/firebase";
 import { onAuthStateChanged, signOut } from "firebase/auth";
 import { useRouter } from "next/navigation";
 import { db } from "@/lib/firebase"; // 👈 Vérifiez bien le chemin vers votre fichier de config Firebase
-import { doc, deleteDoc, updateDoc } from "firebase/firestore"; // 👈 Ces fonctions doivent être importées séparément
+import {
+  doc,
+  deleteDoc,
+  updateDoc,
+  collection,
+  addDoc,
+} from "firebase/firestore"; // 👈 Ces fonctions doivent être importées séparément
+
+export type Category = {
+  id: string;
+  nameFR: string;
+  nameEN: string;
+};
 
 type Product = {
   id: string;
@@ -18,6 +30,7 @@ type Product = {
   price: number;
   img: string;
   video: string;
+  categoryId?: string;
 };
 
 export default function ManageProductsPage() {
@@ -28,6 +41,11 @@ export default function ManageProductsPage() {
   const [editForm, setEditForm] = useState<Partial<Product>>({});
   const [message, setMessage] = useState("");
   const router = useRouter();
+
+  const [categories, setCategories] = useState<Category[]>([]);
+  const [showNewCatForm, setShowNewCatForm] = useState(false);
+  const [newCatFR, setNewCatFR] = useState("");
+  const [newCatEN, setNewCatEN] = useState("");
 
   // États pour gérer les notifications de succès/erreur instantanées
   const [statusMessage, setStatusMessage] = useState("");
@@ -49,18 +67,25 @@ export default function ManageProductsPage() {
   // READ : Récupérer le catalogue
   const fetchProducts = async () => {
     try {
+      // 1. On récupère les produits
       const res = await fetch("/api/products");
       if (res.ok) {
         const data = await res.json();
         setProducts(data);
       }
+
+      // 2. 🆕 On récupère aussi les catégories pour ton formulaire de modification
+      const resCategories = await fetch("/api/categories");
+      if (resCategories.ok) {
+        const categoriesData = await resCategories.json();
+        setCategories(categoriesData); // 🚀 Remplit ton <select> avec "T-SHIRTS"
+      }
     } catch (err) {
-      console.error(err);
+      console.error("Erreur lors de la récupération des données admin :", err);
     } finally {
       setLoading(false);
     }
   };
-
   // Déclencher le mode édition en ligne
   const startEdit = (product: Product) => {
     setEditingId(product.id);
@@ -177,6 +202,39 @@ export default function ManageProductsPage() {
     } catch (error: unknown) {
       console.error("Erreur lors de la suppression complète :", error);
       alert("❌ Une erreur est survenue lors de la suppression.");
+    }
+  };
+
+  const handleCreateCategory = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!newCatFR || !newCatEN) return;
+
+    try {
+      // ☁️ Ajout dans Firestore
+      const docRef = await addDoc(collection(db, "categories"), {
+        nameFR: newCatFR.toUpperCase(),
+        nameEN: newCatEN.toUpperCase(),
+      });
+
+      const newCategory: Category = {
+        id: docRef.id,
+        nameFR: newCatFR.toUpperCase(),
+        nameEN: newCatEN.toUpperCase(),
+      };
+
+      // Mise à jour de l'état local immédiat (Optimiste)
+      setCategories((prev) => [...prev, newCategory]);
+
+      // Sélectionner automatiquement la catégorie qu'on vient de créer pour le produit
+      setEditForm((prev: any) => ({ ...prev, categoryId: docRef.id }));
+
+      // Reset du mini formulaire
+      setNewCatFR("");
+      setNewCatEN("");
+      setShowNewCatForm(false);
+      alert("✅ Nouvelle catégorie ajoutée avec succès !");
+    } catch (error) {
+      console.error("Erreur création catégorie :", error);
     }
   };
 
@@ -297,6 +355,22 @@ export default function ManageProductsPage() {
                         className="bg-black border border-neutral-800 p-2 text-white outline-none"
                       />
                     </div>
+                    <div className="grid grid-cols-2 gap-2">
+                      <textarea
+                        name="detailFR"
+                        placeholder="Détails & Caractéristiques (FR) - ex: 100% Coton, Lavage à 30°C..."
+                        value={editForm.detailFR || ""}
+                        onChange={handleEditChange}
+                        className="bg-black border border-neutral-800 p-2 text-white outline-none min-h-[80px]"
+                      />
+                      <textarea
+                        name="detailEN"
+                        placeholder="Details & Specifications (EN) - e.g., 100% Cotton, Wash at 30°C..."
+                        value={editForm.detailEN || ""}
+                        onChange={handleEditChange}
+                        className="bg-black border border-neutral-800 p-2 text-white outline-none min-h-[80px]"
+                      />
+                    </div>
                     <div>
                       <input
                         type="number"
@@ -305,6 +379,79 @@ export default function ManageProductsPage() {
                         onChange={handleEditChange}
                         className="bg-black border border-neutral-800 p-2 text-white w-32 outline-none"
                       />
+                    </div>
+                    <div className="flex flex-col gap-2 font-mono text-xs">
+                      <label className="text-neutral-400 uppercase font-bold">
+                        Catégorie du Produit
+                      </label>
+                      <div className="flex gap-2">
+                        <select
+                          value={editForm.categoryId || ""}
+                          onChange={(e) =>
+                            setEditForm({
+                              ...editForm,
+                              categoryId: e.target.value,
+                            })
+                          }
+                          className="bg-neutral-900 border border-neutral-800 p-2 text-white flex-1 rounded-sm"
+                        >
+                          <option value="">-- Sélectionner --</option>
+                          {categories.map((c) => (
+                            <option key={c.id} value={c.id}>
+                              {c.nameFR} ({c.nameEN})
+                            </option>
+                          ))}
+                        </select>
+
+                        <button
+                          type="button"
+                          onClick={() => setShowNewCatForm(!showNewCatForm)}
+                          className="bg-emerald-600 text-white px-3 font-bold rounded-sm hover:bg-emerald-700"
+                        >
+                          + Nouvelle
+                        </button>
+                      </div>
+
+                      {/* Mini Formulaire Pop-up interne pour ajouter à la volée */}
+                      {showNewCatForm && (
+                        <div className="bg-neutral-950 p-4 border border-emerald-800 rounded-sm space-y-3 mt-2">
+                          <p className="text-emerald-400 text-[10px] font-bold uppercase">
+                            ➕ CRÉER UNE CATÉGORIE INEXISTANTE
+                          </p>
+                          <div className="grid grid-cols-2 gap-2">
+                            <input
+                              type="text"
+                              placeholder="Nom en Français (ex: SWEATS)"
+                              value={newCatFR}
+                              onChange={(e) => setNewCatFR(e.target.value)}
+                              className="bg-neutral-900 border border-neutral-800 p-2 text-white rounded-xs"
+                            />
+                            <input
+                              type="text"
+                              placeholder="Nom en Anglais (ex: HOODIES)"
+                              value={newCatEN}
+                              onChange={(e) => setNewCatEN(e.target.value)}
+                              className="bg-neutral-900 border border-neutral-800 p-2 text-white rounded-xs"
+                            />
+                          </div>
+                          <div className="flex justify-end gap-2 text-[10px]">
+                            <button
+                              type="button"
+                              onClick={() => setShowNewCatForm(false)}
+                              className="text-neutral-500 uppercase"
+                            >
+                              Annuler
+                            </button>
+                            <button
+                              type="button"
+                              onClick={handleCreateCategory}
+                              className="bg-emerald-600 text-white px-3 py-1 font-bold rounded-xs"
+                            >
+                              Créer
+                            </button>
+                          </div>
+                        </div>
+                      )}
                     </div>
                     <div className="flex gap-2 pt-2">
                       <button
