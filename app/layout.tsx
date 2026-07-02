@@ -1,15 +1,20 @@
 import type { Metadata } from "next";
-import { Geist, Geist_Mono } from "next/font/google";
+import { Paytone_One, Athiti } from "next/font/google";
 import "./globals.css";
 
-const geistSans = Geist({
-  variable: "--font-geist-sans",
+const paytoneOne = Paytone_One({
+  weight: "400",
   subsets: ["latin"],
+  variable: "--font-paytone-one",
+  preload: true,
 });
 
-const geistMono = Geist_Mono({
-  variable: "--font-geist-mono",
+const athiti = Athiti({
+  weight: ["200", "300", "400", "500", "600", "700"],
   subsets: ["latin"],
+  variable: "--font-athiti",
+  style: "normal",
+  preload: true,
 });
 
 export const metadata: Metadata = {
@@ -36,9 +41,7 @@ export default function RootLayout({
           content="yM8uv0TXDO21p5vj5KHRXwUHJWiuIN25IucmFOlwMPs"
         />
       </head>
-      <body
-        className={`${geistSans.variable} ${geistMono.variable} antialiased`}
-      >
+      <body className={`${athiti.variable} ${paytoneOne.variable} antialiased`}>
         {children}
       </body>
     </html>
